@@ -104,15 +104,19 @@ impl State {
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    //Сохраняем цвета в созданную текстуру view
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
+                        //Указываем как обрабатывать цвета которые остались в пердыдущем кадре
+                        //В нашем случае мы их очищаем, закрашивая всё цветом
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 1.0,
                             g: 0.2,
                             b: 0.3,
                             a: 1.0,
                         }),
+                        //Сохранять результат в текстуре view
                         store: true,
                     },
                 })],
