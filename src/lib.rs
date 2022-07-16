@@ -14,6 +14,7 @@ struct State {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
+    clear_color: wgpu::Color,
 }
 
 impl State {
@@ -59,12 +60,15 @@ impl State {
 
         surface.configure(&device, &config);
 
+        let clear_color = wgpu::Color::WHITE;
+
         Self {
             surface,
             device,
             queue,
             config,
             size,
+            clear_color,
         }
     }
 
@@ -78,11 +82,21 @@ impl State {
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
-        false
+        if let WindowEvent::CursorMoved { position, .. } = event {
+            println!("1: {:?}, ", position);
+            
+            self.clear_color.r = position.x / self.size.width as f64;
+            self.clear_color.g = position.y / self.size.height as f64;
+            self.clear_color.b = (position.x + position.y) / (self.size.width + self.size.height) as f64;
+            self.clear_color.a = 1.0;
+            true
+        } else {
+            false
+        }
     }
 
     fn update(&mut self) {
-        println!("aaaa");
+        //println!("aaaa");
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -110,12 +124,7 @@ impl State {
                     ops: wgpu::Operations {
                         //Указываем как обрабатывать цвета которые остались в пердыдущем кадре
                         //В нашем случае мы их очищаем, закрашивая всё цветом
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 1.0,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(self.clear_color),
                         //Сохранять результат в текстуре view
                         store: true,
                     },
@@ -150,7 +159,7 @@ pub async fn run() {
     #[cfg(target_arch = "wasm32")]
     {
         use winit::dpi::PhysicalSize;
-        window.set_inner_size(PhysicalSize::new(450, 400));
+        window.set_inner_size(PhysicalSize::new(800, 600));
         
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
