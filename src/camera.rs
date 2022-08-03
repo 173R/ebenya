@@ -21,15 +21,10 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new() -> Self {
-        Self { 
+    pub fn new(a: &Matrix4x4) -> Self {
+        Self {
             uniform: CameraUniform {
-                view: [
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.5],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ] 
+                view: a.into()
             }, 
             //buffer: None,
             //bind_group: None

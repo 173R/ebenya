@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Mul};
+use std::{fmt::Debug, ops::Mul, array};
 
 use num::Float;
 
@@ -36,18 +36,31 @@ impl<T: Float + Default + Debug, const R: usize, const C: usize> Matrix<T, R, C>
     //}
 }
 
-//Проблема с кубическими и не кубическими матрицами
+//impl<T, const R: usize, const C: usize> From<[[T; C]; R]> for Matrix<T, R, C> 
+//where
+//    T: Float + Default + Debug + std::ops::AddAssign,
+//{
+//    fn from(array : [[T; C]; R]) -> Self {
+//        Matrix::new()
+//    }
+//}
 
-impl<T, const R: usize, const C: usize> Mul<Matrix<T, R, C>> for Matrix<T, R, C>
+
+
+//Проблема с кубическими и не кубическими матрицами
+//Только для кубической матрицы
+impl<T, const S: usize> Mul<Matrix<T, S, S>> for Matrix<T, S, S>
 where
     T: Float + Default + Debug + std::ops::AddAssign,
 {
-    type Output = Matrix<T, R, C>;
-    fn mul(self, rhs: Matrix<T, R, C>) -> Matrix<T, R, C> {
+    type Output = Matrix<T, S, S>;
+    fn mul(self, rhs: Matrix<T, S, S>) -> Matrix<T, S, S> {
         let mut result = Self::new();
-        for row in 0..R {
-            for col in 0..C {
-                result.0[row][col] += self.0[row][col] * rhs.0[col][row];
+        for i in 0..S {
+            for j in 0..S {
+                for k in 0..S  {
+                    result.0[j][i] += self.0[i][k] * rhs.0[k][i];   
+                }
             }
         }
 

@@ -28,6 +28,8 @@ mod tests {
 
         println!("{:?}", matrix);
         println!("{:?}", matrix_s);
+
+        //cgmath::Matrix4::identity().into();
         
         println!("{:?}", matrix * matrix_s);
 
@@ -294,66 +296,6 @@ impl State {
         let mut camera = camera::Camera::new();
         let (camera_bind_group_layout, camera_bind_group) = 
             camera.get_camera_bind_groups(&device);
-        
-
-
-        //////
-
-
-        /*
-        let camera = Camera {
-            //Позиция камеры, как я понимаю координат опрделены для OpenGL(правосторонняя)
-            eye: (0.0, 1.0, 2.0).into(),
-            //Точка в которую устремлена камера
-            target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_y(),
-            aspect: config.width as f32 / config.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-        };
-
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
-
-        let camera_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Camera Buffer"),
-                contents: bytemuck::cast_slice(&[camera_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-
-        let camera_bind_group_layout = device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    }
-                ],
-                label: Some("camera_bind_group_layout"),
-            }
-        );
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                }
-            ],
-            label: Some("camera_bind_group"),
-        });
-
-        */
 
 
         let clear_color = wgpu::Color::WHITE;
