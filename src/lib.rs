@@ -14,6 +14,29 @@ mod vmath;
 
 mod camera;
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn it_works() {
+        let matrix =
+            vmath::Matrix4x4::new_indentity(&[2.0, 2.0, 2.0, 2.0]);
+
+        let matrix_s =
+            vmath::Matrix4x4::new_translation(&[2.0, 2.0, 2.0, 2.0]);
+
+        println!("{:?}", matrix);
+        println!("{:?}", matrix_s);
+        
+        println!("{:?}", matrix * matrix_s);
+
+        //println!("{:?}", matrix_s);
+       //nalgebra::Matrix4::new_orthographic(left, right, bottom, top, znear, zfar)
+       //dbg!(10);
+    }
+}
+
 /*
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -135,16 +158,16 @@ struct State {
     diffuse_bind_group: wgpu::BindGroup,
     diffuse_texture: texture::Texture,
     second_diffuse_bind_group: wgpu::BindGroup,
-    //camera: camera::Camera,
+    camera: camera::Camera,
     //camera_uniform: CameraUniform,
     //camera_buffer: wgpu::Buffer,
-    //camera_bind_group: wgpu::BindGroup,
+    camera_bind_group: wgpu::BindGroup,
 }
 
 impl State {
     async fn new(window: &Window) -> Self {
 
-        let matrix: vmath::Matrix4x4<f64> = vmath::Matrix4x4::new();
+        //let matrix: vmath::Matrix4x4<f64> = vmath::Matrix4x4::new();
 
         /////
         let size = window.inner_size();
@@ -268,18 +291,10 @@ impl State {
             }
         );
 
-        ///
-        /*
-        let camera = camera::Camera {
-            fov: 45.0,
-            position: (0.0, 0.0, 3.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_y(),
-            uniform: camera::CameraUniform {
-                view: cgmath::look_to_lh()
-            }
-        };
-        */
+        let mut camera = camera::Camera::new();
+        let (camera_bind_group_layout, camera_bind_group) = 
+            camera.get_camera_bind_groups(&device);
+        
 
 
         //////
@@ -367,7 +382,7 @@ impl State {
                 //которые уже загружаются в методе render
                 bind_group_layouts: &[
                     &texture_bind_group_layout,
-                    //&camera_bind_group_layout,    
+                    &camera_bind_group_layout,    
                 ],
                 push_constant_ranges: &[],
             }
@@ -467,10 +482,11 @@ impl State {
             diffuse_bind_group,
             diffuse_texture,
             second_diffuse_bind_group,
+            camera,
             //camera,
             //camera_uniform,
             //camera_buffer,
-            //camera_bind_group,
+            camera_bind_group,
         }
     }
 
@@ -512,7 +528,7 @@ impl State {
     }
 
     fn update(&mut self) {
-        println!("aaaa");
+        //println!("aaaa");
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -557,7 +573,7 @@ impl State {
             } else {
                 render_pass.set_bind_group(0, &self.second_diffuse_bind_group, &[]);    
             }
-            //render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             //параметры: номер слота, вершины
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             //Можно использовать только оидн индексный буфер
