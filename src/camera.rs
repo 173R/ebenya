@@ -21,11 +21,11 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(a: &Matrix4x4) -> Self {
+    pub fn new(view_matrix: &Matrix4x4<f32>) -> Self {
         Self {
             uniform: CameraUniform {
-                view: a.into()
-            }, 
+                view: (*view_matrix).into(),
+            },
             //buffer: None,
             //bind_group: None
         }

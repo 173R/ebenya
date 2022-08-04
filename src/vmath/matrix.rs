@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Mul, array};
+use std::{fmt::Debug, ops::Mul};
 
 use num::Float;
 
@@ -10,42 +10,55 @@ impl<T: Float + Default + Debug, const R: usize, const C: usize> Matrix<T, R, C>
         Self ([[Default::default(); C]; R])
     }
 
-    pub fn new_indentity(diagonal: &[T; R]) -> Self {
-        let mut matrix = Self::new();
-        for row in 0..matrix.0.len() {
-            for col in 0..matrix.0[row].len() {
+    pub fn new_from_array(array: [[T; C]; R]) -> Self {
+        Self (array)
+    }
+
+    pub fn new_translation(translation: &[T; R]) -> Self {
+        let mut matrix = Self::new_indentity();
+        for row in 0..R {
+            matrix.0[row][C - 1] = translation[row];
+        }
+
+        matrix
+    }
+
+    pub fn new_indentity() -> Self {
+        Self::new_scale(&[T::one(); R])
+    } 
+
+    pub fn new_scale(scale: &[T; R]) -> Self {
+        let mut scale_matrix = Self::new();
+        for row in 0..scale_matrix.0.len() {
+            for col in 0..scale_matrix.0[row].len() {
                 if row == col {
-                    matrix.0[row][col] = diagonal[row];
+                    scale_matrix.0[row][col] = scale[row];
                 }
             }
         }
-        matrix
+        scale_matrix
     }
 
-    pub fn new_translation(diagonal: &[T; R]) -> Self {
-        let mut matrix = Self::new();
-        for row in 0..R {
-            matrix.0[row][C - 1] = diagonal[row];
-        }
+    // fn set_diagonal(&self, diagonal: &[T; R]) -> Self {
+    //     let mut matrix = Self::new();
+    //     for row in 0..matrix.0.len() {
+    //         for col in 0..matrix.0[row].len() {
+    //             if row == col {
+    //                 matrix.0[row][col] = diagonal[row];
+    //             }
+    //         }
+    //     }
 
-        matrix
-    }
-
-    //pub fn mul(matrix: Matrix<T, R, C>) -> Matrix<T, C, R> {
-        
-    //}
+    //     matrix
+    // }
 }
 
-//impl<T, const R: usize, const C: usize> From<[[T; C]; R]> for Matrix<T, R, C> 
-//where
-//    T: Float + Default + Debug + std::ops::AddAssign,
-//{
-//    fn from(array : [[T; C]; R]) -> Self {
-//        Matrix::new()
-//    }
-//}
 
-
+impl<T: Float> From<Matrix4x4<T>> for [[T; 4]; 4] {
+    fn from(matrix: Matrix4x4<T>) -> Self {
+        matrix.0
+    }
+}
 
 //Проблема с кубическими и не кубическими матрицами
 //Только для кубической матрицы
@@ -74,32 +87,4 @@ impl<T: Float + Default + Debug, const R: usize, const C: usize> Debug for Matri
     }
 }
 
-pub type Matrix4x4 = Matrix<f64, 4, 4>;
-
-/*impl<T: Float + Default, const R: usize, const C: usize> Default for Matrix<T, R, C> {
-    fn default() -> Self {
-        Matrix {
-            data: [[Default::default(); C]; R],
-        }
-    }
-}*/
-
- 
-/*impl<T: Float + Default, const R: usize, const C: usize> Matrix<T, R, C> {
-    fn new() -> Self {
-        Matrix {
-            data: [[10.0 as T, C]; R]
-        }
-    }
-}
-*/
-
-//type Matrix4x4 = Matrix<f64, 4, 4>;
-//type Matrix3x3 = Matrix<f64, 3, 3>;
-
-/* 
-impl<T: Float> Matrix4x4<T> {
-    fn new() -> Self {
-        Self { data: [[Default::default(); 4]; 4] }
-    }
-}*/
+pub type Matrix4x4<T> = Matrix<T, 4, 4>;

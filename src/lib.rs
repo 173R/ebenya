@@ -1,4 +1,7 @@
 use wgpu::util::DeviceExt;
+use vmath::{
+    Matrix4x4
+};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -11,27 +14,34 @@ use wasm_bindgen::prelude::*;
 
 mod texture;
 mod vmath;
-
 mod camera;
 
 
 #[cfg(test)]
 mod tests {
+    use crate::vmath::Matrix4x4;
+
     use super::*;
     #[test]
     fn it_works() {
-        let matrix =
-            vmath::Matrix4x4::new_indentity(&[2.0, 2.0, 2.0, 2.0]);
+        let matrix: Matrix4x4<f32> =
+            vmath::Matrix4x4::new_indentity();
 
-        let matrix_s =
-            vmath::Matrix4x4::new_translation(&[2.0, 2.0, 2.0, 2.0]);
+        let matrix_s: Matrix4x4<f32> =
+            vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
+
+        let matrix_t: Matrix4x4<f32> =
+            vmath::Matrix4x4::new_scale(&[2.1, 2.2, 2.3, 1.0]);
 
         println!("{:?}", matrix);
         println!("{:?}", matrix_s);
+        println!("{:?}", matrix_t);
 
+
+        //cgmath::Matrix4
         //cgmath::Matrix4::identity().into();
         
-        println!("{:?}", matrix * matrix_s);
+        //println!("{:?}", matrix * matrix_s);
 
         //println!("{:?}", matrix_s);
        //nalgebra::Matrix4::new_orthographic(left, right, bottom, top, znear, zfar)
@@ -293,7 +303,10 @@ impl State {
             }
         );
 
-        let mut camera = camera::Camera::new();
+        let view_matrix: Matrix4x4<f32>
+            = Matrix4x4::new_translation(&[1.0, 0.0, 0.0, 1.0]);
+
+        let mut camera = camera::Camera::new(&view_matrix);
         let (camera_bind_group_layout, camera_bind_group) = 
             camera.get_camera_bind_groups(&device);
 
