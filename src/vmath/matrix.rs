@@ -1,6 +1,10 @@
+/*
+    Col-major square matrix
+*/
+
 use std::{fmt::Debug, ops::Mul};
 
-use num::Float;
+use num::{Float, FromPrimitive};
 
 #[derive(Copy, Clone)]
 pub struct SquareMatrix<T: Float, const S: usize> {
@@ -21,46 +25,31 @@ impl<T: Float + Default + Debug, const S: usize> SquareMatrix<T, S> {
     }
 
     pub fn new_translation(translation: &[T; S]) -> Self {
-        let mut matrix = Self::new_indentity();
+        let mut translation_matrix = Self::new_indent();
         for row in 0..S {
-            matrix.data[row][S - 1] = translation[row];
+            translation_matrix.data[S - 1][row] = translation[row];
         }
 
-        matrix
+        translation_matrix
     }
 
-    pub fn new_indentity() -> Self {
+    pub fn new_indent() -> Self {
         Self::new_scale(&[T::one(); S])
     } 
 
     pub fn new_scale(scale: &[T; S]) -> Self {
         let mut scale_matrix = Self::new();
-        for row in 0..scale_matrix.data.len() {
-            for col in 0..scale_matrix.data[row].len() {
-                if row == col {
-                    scale_matrix.data[row][col] = scale[row];
+        for row_i in 0..S {
+            for col_i in 0..S {
+                if row_i == col_i {
+                    scale_matrix.data[row_i][col_i] = scale[row_i];
                 }
             }
         }
+
         scale_matrix
     }
 
-    // pub fn transpose(&mut self) {
-    //     let mut matrix = *self;
-    //     for (index, row) in matrix.0.iter().enumerate() {
-    //        for value in row {
-    //         self.0[index][] = value;
-    //        } 
-    //     }
-    // }
-
-}
-
-
-impl<T: Float> From<Matrix4x4<T>> for [[T; 4]; 4] {
-    fn from(matrix: Matrix4x4<T>) -> Self {
-        matrix.data
-    }
 }
 
 impl<T, const S: usize> Mul<SquareMatrix<T, S>> for SquareMatrix<T, S>
@@ -73,7 +62,7 @@ where
         for i in 0..S {
             for j in 0..S {
                 for k in 0..S  {
-                    result.data[j][i] += self.data[i][k] * rhs.data[k][i];   
+                    result.data[j][i] += self.data[k][i] * rhs.data[j][k];   
                 }
             }
         }
@@ -89,3 +78,29 @@ impl<T: Float + Debug, const S: usize> Debug for SquareMatrix<T, S> {
 }
 
 pub type Matrix4x4<T> = SquareMatrix<T, 4>;
+
+impl<T: Float + Default + Debug + FromPrimitive> Matrix4x4<T> {
+    pub fn new_perspective(width: T, height: T) -> Self {
+        let aspect = width / height;
+        //fov_y = 60.0, 60.0 / 2.0
+        let focal_lenght: T = T::one() / T::from_f32(30.0).unwrap().to_radians().tan();
+        //fov_x = 90;
+        let fov_x = T::from_f32(2.0).unwrap() * (aspect / focal_lenght).atan().to_degrees();
+
+        let perspective_matrix = Self::new();
+        perspective_matrix
+    }
+}
+
+
+impl<T: Float> From<Matrix4x4<T>> for [[T; 4]; 4] {
+    fn from(matrix: Matrix4x4<T>) -> Self {
+        matrix.data
+    }
+}
+
+impl<T: Float> From<[[T; 4]; 4]> for Matrix4x4<T> {
+    fn from(array: [[T; 4]; 4]) -> Self {
+        Self { data: array }
+    }
+}

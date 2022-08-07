@@ -25,7 +25,7 @@ mod tests {
     #[test]
     fn it_works() {
         let matrix: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_indentity();
+            vmath::Matrix4x4::new_indent();
 
         let matrix_s: Matrix4x4<f32> =
             vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
@@ -33,9 +33,13 @@ mod tests {
         let matrix_t: Matrix4x4<f32> =
             vmath::Matrix4x4::new_scale(&[2.1, 2.2, 2.3, 1.0]);
 
+        let matrix_t: Matrix4x4<f32> =
+            vmath::Matrix4x4::new_perspective(2560.0, 1440.0);
+
         println!("{:?}", matrix);
         println!("{:?}", matrix_s);
         println!("{:?}", matrix_t);
+        println!("{:?}", matrix * matrix_s);
 
 
         //cgmath::Matrix4
@@ -171,9 +175,8 @@ struct State {
     diffuse_texture: texture::Texture,
     second_diffuse_bind_group: wgpu::BindGroup,
     camera: camera::Camera,
-    //camera_uniform: CameraUniform,
-    //camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    camera_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -303,11 +306,10 @@ impl State {
             }
         );
 
-        let view_matrix: Matrix4x4<f32>
-            = Matrix4x4::new_translation(&[1.0, 0.0, 0.0, 1.0]);
+        let view_matrix: Matrix4x4<f32> = Matrix4x4::new_indent();
 
         let mut camera = camera::Camera::new(&view_matrix);
-        let (camera_bind_group_layout, camera_bind_group) = 
+        let (camera_bind_group_layout, camera_bind_group, camera_buffer) = 
             camera.get_camera_bind_groups(&device);
 
 
@@ -442,6 +444,7 @@ impl State {
             //camera_uniform,
             //camera_buffer,
             camera_bind_group,
+            camera_buffer
         }
     }
 
@@ -478,12 +481,18 @@ impl State {
             },
             _ => {}
         }
+
+        self.camera.poll_events(event);
         
         return false;
     }
 
     fn update(&mut self) {
-        //println!("aaaa");
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera.uniform])
+        )
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {

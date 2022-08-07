@@ -1,4 +1,7 @@
-use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout};
+use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
+use winit::{
+    event::*,
+};
 use crate::vmath::*;
 
 #[repr(C)]
@@ -8,13 +11,13 @@ pub struct CameraUniform {
 }
 
 pub struct Camera {
+    pub uniform: CameraUniform,
     //position: Vector3<f32>,
     //target: Vector3<f32>,
     //up: Vector3<f32>,
     //fov: f32,
     //eye: f32,
     //target: f32,
-    uniform: CameraUniform,
 
     //buffer: Option<wgpu::Buffer>,
     //bind_group: Option<wgpu::BindGroup>,
@@ -31,13 +34,16 @@ impl Camera {
         }
     }
 
-    fn update_view(&mut self) {
-        //self.camera_uniform.view = view.into();
+    fn update_view(&mut self, new_view: &Matrix4x4<f32>) {
+        self.uniform = CameraUniform {
+            view: (*new_view).into(),
+        }
     }
 
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
         BindGroupLayout,
-        BindGroup
+        BindGroup,
+        Buffer,
     ) {
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -76,6 +82,46 @@ impl Camera {
             label: Some("camera_bind_group"),
         });
 
-        (bind_group_layout, bind_group)
+        (bind_group_layout, bind_group, buffer)
+    }
+
+    pub fn move_left(&mut self) {
+        self.update_view(
+        &(Matrix4x4::from(self.uniform.view) * Matrix4x4::new_translation(&[0.1, 0.0, 0.0, 1.0]))
+        );
+    }
+
+    pub fn move_right(&mut self) {
+        self.update_view(
+        &(Matrix4x4::from(self.uniform.view) * Matrix4x4::new_translation(&[-0.1, 0.0, 0.0, 1.0]))
+        );
+    }
+
+    pub fn poll_events(&mut self, event: &WindowEvent) {
+        match event {
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::A),
+                        ..
+                    },
+                    ..
+            } => {
+                self.move_left();
+            },
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::D),
+                        ..
+                    },
+                    ..
+            } => {
+                self.move_right();
+            },
+            _ => {}
+        }
     }
 }
