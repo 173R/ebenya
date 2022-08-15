@@ -2,42 +2,60 @@ use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
 use winit::{
     event::*,
 };
-use crate::vmath::*;
+use crate::vmath::{Vector3, Matrix4x4, lookAt};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
-    view: [[f32; 4]; 4],
+    view_proj: [[f32; 4]; 4],
 }
 
+#[derive(Debug)]
 pub struct Camera {
     pub uniform: CameraUniform,
-    //position: Vector3<f32>,
-    //target: Vector3<f32>,
+    position: Vector3<f32>,
+    target: Vector3<f32>,
+    fov: f32,
+    width: f32, 
+    height: f32,
+    
+
+
     //up: Vector3<f32>,
     //fov: f32,
     //eye: f32,
-    //target: f32,
 
     //buffer: Option<wgpu::Buffer>,
     //bind_group: Option<wgpu::BindGroup>,
+    //perspective: Matrix4x4<f32>,  
 }
 
 impl Camera {
-    pub fn new(view_matrix: &Matrix4x4<f32>) -> Self {
+    pub fn new(position: Vector3<f32>, target: Vector3<f32>, fov: f32, width: f32, height: f32) -> Self {
         Self {
             uniform: CameraUniform {
-                view: (*view_matrix).into(),
+                view_proj: Matrix4x4::new_indent().into(),
             },
+
+            //perspective: Matrix4x4::new_perspective(800.0, 600.0, 0.1, 100.0, 90.0),
             //buffer: None,
             //bind_group: None
+            position,
+            target,
+            fov,
+            width,
+            height,
+
         }
     }
 
-    fn update_view(&mut self, new_view: &Matrix4x4<f32>) {
-        self.uniform = CameraUniform {
-            view: (*new_view).into(),
-        }
+    pub fn update_view_proj(&mut self) {
+        let view = lookAt(self.position, self.target);
+        let proj = Matrix4x4::new_perspective(
+            self.width, self.height, 0.1, 100.0, self.fov
+        );
+        self.uniform.view_proj = (proj * view).into();
+        println!("cam.pos = {:?}", self.position);
     }
 
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
@@ -86,15 +104,23 @@ impl Camera {
     }
 
     pub fn move_left(&mut self) {
-        self.update_view(
-        &(Matrix4x4::from(self.uniform.view) * Matrix4x4::new_translation(&[0.1, 0.0, 0.0, 1.0]))
-        );
+        self.position = Vector3::new(self.position.x - 0.1, self.position.y, self.position.z);
+        self.update_view_proj();
     }
 
     pub fn move_right(&mut self) {
-        self.update_view(
-        &(Matrix4x4::from(self.uniform.view) * Matrix4x4::new_translation(&[-0.1, 0.0, 0.0, 1.0]))
-        );
+        self.position = Vector3::new(self.position.x + 0.1, self.position.y, self.position.z);
+        self.update_view_proj();
+    }
+
+    pub fn move_forward(&mut self) {
+        self.position = Vector3::new(self.position.x, self.position.y, self.position.z + 0.1);
+        self.update_view_proj();
+    }
+
+    pub fn move_backward(&mut self) {
+        self.position = Vector3::new(self.position.x, self.position.y, self.position.z - 0.1);
+        self.update_view_proj();
     }
 
     pub fn poll_events(&mut self, event: &WindowEvent) {
@@ -121,6 +147,32 @@ impl Camera {
             } => {
                 self.move_right();
             },
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::W),
+                        ..
+                    },
+                    ..
+            } => {
+                self.move_forward();
+            },
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::S),
+                        ..
+                    },
+                    ..
+            } => {
+                self.move_backward();
+            },
+            WindowEvent::CursorMoved { 
+                position,
+                ..
+            } => { println!("cursor: {:?}", position)},
             _ => {}
         }
     }

@@ -27,22 +27,28 @@ mod tests {
         let matrix: Matrix4x4<f32> =
             vmath::Matrix4x4::new_indent();
 
-        let matrix_s: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
+        // let matrix_s: Matrix4x4<f32> =
+        //     vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
 
         let matrix_t: Matrix4x4<f32> =
             vmath::Matrix4x4::new_scale(&[2.1, 2.2, 2.3, 1.0]);
 
-        let matrix_t: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_perspective(2560.0, 1440.0);
-
-        println!("{:?}", matrix);
-        println!("{:?}", matrix_s);
-        println!("{:?}", matrix_t);
-        println!("{:?}", matrix * matrix_s);
+        let aaa = 
+            vmath::Vector3::new(1.0, 0.0, 0.0).cross(vmath::Vector3::new(0.0, 0.0, 1.0)); 
+        let vect = vmath::Vector3::new(-5.0, 10.0, -2.0).normalize();
+        let vect2 = vmath::Vector3::new(5.0, 10.0, 2.0).normalize();
 
 
-        //cgmath::Matrix4
+        //let matrix_t: Matrix4x4<f32> =
+        //    vmath::Matrix4x4::new_perspective(2560.0, 1440.0, );
+
+        //println!("{:?}", matrix);
+        // println!("{:?}", matrix_s);
+        // println!("{:?}", matrix_t);
+        // println!("{:?}", matrix * matrix_s);
+
+
+        //cgmath::Vector3
         //cgmath::Matrix4::identity().into();
         
         //println!("{:?}", matrix * matrix_s);
@@ -141,10 +147,10 @@ impl Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.5, -0.5, 0.0], tex_coords: [1.0, 1.0], }, // A
-    Vertex { position: [-0.5, -0.5, 0.0], tex_coords: [0.0, 1.0], }, // A
-    Vertex { position: [-0.5, 0.5, 0.0], tex_coords: [0.0, 0.0], }, // A
-    Vertex { position: [0.5, 0.5, 0.0], tex_coords: [1.0, 0.0], }, // A
+    Vertex { position: [2.0, -2.0, 10.0], tex_coords: [1.0, 1.0], }, // A
+    Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
+    Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
+    Vertex { position: [2.0, 2.0, 10.0], tex_coords: [1.0, 0.0], }, // A
     
     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
@@ -306,9 +312,17 @@ impl State {
             }
         );
 
-        let view_matrix: Matrix4x4<f32> = Matrix4x4::new_indent();
+        //let view_matrix: Matrix4x4<f32> = Matrix4x4::new_indent();
 
-        let mut camera = camera::Camera::new(&view_matrix);
+        let mut camera = camera::Camera::new(
+        vmath::Vector3::new(0.0, 0.0, 0.0),
+            vmath::Vector3::new(0.0, 0.0, 1.0),
+            90.0,
+            800.0,
+            600.0
+        );
+        camera.update_view_proj();
+
         let (camera_bind_group_layout, camera_bind_group, camera_buffer) = 
             camera.get_camera_bind_groups(&device);
 
