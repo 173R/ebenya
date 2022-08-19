@@ -321,7 +321,7 @@ impl State {
             800.0,
             600.0
         );
-        camera.update_view_proj();
+        camera.update();
 
         let (camera_bind_group_layout, camera_bind_group, camera_buffer) = 
             camera.get_camera_bind_groups(&device);
@@ -472,29 +472,29 @@ impl State {
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::CursorMoved {
-                position,
-                ..
-            } => {
-                self.clear_color.r = position.x / self.size.width as f64;
-                self.clear_color.g = position.y / self.size.height as f64;
-                self.clear_color.b = (position.x + position.y) / (self.size.width + self.size.height) as f64;
-                self.clear_color.a = 1.0;    
-            },
-            WindowEvent::KeyboardInput {
-                input:
-                        KeyboardInput {
-                            state: ElementState::Released,
-                            virtual_keycode: Some(VirtualKeyCode::Space),
-                            ..
-                        },
-                    ..
-            } => {
-                self.space_on = !self.space_on;
-            },
-            _ => {}
-        }
+        // match event {
+        //     WindowEvent::CursorMoved {
+        //         position,
+        //         ..
+        //     } => {
+        //         self.clear_color.r = position.x / self.size.width as f64;
+        //         self.clear_color.g = position.y / self.size.height as f64;
+        //         self.clear_color.b = (position.x + position.y) / (self.size.width + self.size.height) as f64;
+        //         self.clear_color.a = 1.0;    
+        //     },
+        //     WindowEvent::KeyboardInput {
+        //         input:
+        //                 KeyboardInput {
+        //                     state: ElementState::Released,
+        //                     virtual_keycode: Some(VirtualKeyCode::Space),
+        //                     ..
+        //                 },
+        //             ..
+        //     } => {
+        //         self.space_on = !self.space_on;
+        //     },
+        //     _ => {}
+        // }
 
         self.camera.poll_events(event);
         
@@ -502,6 +502,7 @@ impl State {
     }
 
     fn update(&mut self) {
+        self.camera.update();
         self.queue.write_buffer(
             &self.camera_buffer,
             0,

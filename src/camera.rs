@@ -11,6 +11,14 @@ pub struct CameraUniform {
 }
 
 #[derive(Debug)]
+pub struct CameraMovement {
+    left: bool,
+    right: bool,
+    forward: bool,
+    backward: bool,
+}
+
+#[derive(Debug)]
 pub struct Camera {
     pub uniform: CameraUniform,
     position: Vector3<f32>,
@@ -18,16 +26,10 @@ pub struct Camera {
     fov: f32,
     width: f32, 
     height: f32,
-    
-
-
-    //up: Vector3<f32>,
-    //fov: f32,
-    //eye: f32,
-
+    movement: CameraMovement,
+    speed: f32,
     //buffer: Option<wgpu::Buffer>,
     //bind_group: Option<wgpu::BindGroup>,
-    //perspective: Matrix4x4<f32>,  
 }
 
 impl Camera {
@@ -36,26 +38,50 @@ impl Camera {
             uniform: CameraUniform {
                 view_proj: Matrix4x4::new_indent().into(),
             },
-
-            //perspective: Matrix4x4::new_perspective(800.0, 600.0, 0.1, 100.0, 90.0),
-            //buffer: None,
-            //bind_group: None
             position,
             target,
             fov,
             width,
             height,
+            movement: CameraMovement {
+                left: false,
+                right: false,
+                forward: false,
+                backward: false,
+            },
+            speed: 0.1,
 
         }
     }
 
-    pub fn update_view_proj(&mut self) {
+    pub fn update(&mut self) {
+
+        let mut dir: Vector3<f32> = Vector3::new(0.0, 0.0, 0.0);
+
+        if self.movement.left {
+            dir.x = -1.0;
+        }
+
+        if self.movement.right {
+            dir.x = 1.0;
+        }
+
+        if self.movement.forward {
+            dir.z = 1.0;
+        }
+
+        if self.movement.backward {
+            dir.z = -1.0;
+        }
+
+        self.position = self.position + dir * self.speed;
+
         let view = lookAt(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
             self.width, self.height, 0.1, 100.0, self.fov
         );
         self.uniform.view_proj = (proj * view).into();
-        println!("cam.pos = {:?}", self.position);
+        //println!("cam.pos = {:?}", self.position);
     }
 
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
@@ -103,77 +129,40 @@ impl Camera {
         (bind_group_layout, bind_group, buffer)
     }
 
-    pub fn move_left(&mut self) {
-        self.position = Vector3::new(self.position.x - 0.1, self.position.y, self.position.z);
-        self.update_view_proj();
-    }
-
-    pub fn move_right(&mut self) {
-        self.position = Vector3::new(self.position.x + 0.1, self.position.y, self.position.z);
-        self.update_view_proj();
-    }
-
-    pub fn move_forward(&mut self) {
-        self.position = Vector3::new(self.position.x, self.position.y, self.position.z + 0.1);
-        self.update_view_proj();
-    }
-
-    pub fn move_backward(&mut self) {
-        self.position = Vector3::new(self.position.x, self.position.y, self.position.z - 0.1);
-        self.update_view_proj();
-    }
-
     pub fn poll_events(&mut self, event: &WindowEvent) {
         match event {
             WindowEvent::KeyboardInput {
                 input:
                     KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::A),
+                        state,
+                        virtual_keycode,
                         ..
                     },
                     ..
             } => {
-                self.move_left();
-            },
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::D),
-                        ..
+                let pressed = *state == ElementState::Pressed;
+                match virtual_keycode {
+                    Some(VirtualKeyCode::A | VirtualKeyCode::Left) => {
+                        self.movement.left = pressed;      
                     },
-                    ..
-            } => {
-                self.move_right();
-            },
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::W),
-                        ..
+                    Some(VirtualKeyCode::D | VirtualKeyCode::Right) => {
+                        self.movement.right = pressed;  
                     },
-                    ..
-            } => {
-                self.move_forward();
-            },
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::S),
-                        ..
+                    Some(VirtualKeyCode::W | VirtualKeyCode::Up) => {
+                        self.movement.forward = pressed;    
                     },
-                    ..
-            } => {
-                self.move_backward();
+                    Some(VirtualKeyCode::S | VirtualKeyCode::Down) => {
+                        self.movement.backward = pressed;    
+                    },
+                    _ => {}
+                }
             },
-            WindowEvent::CursorMoved { 
-                position,
-                ..
-            } => { println!("cursor: {:?}", position)},
             _ => {}
+            // WindowEvent::CursorMoved { 
+            //     position,
+            //     ..
+            // } => { /*println!("cursor: {:?}", position)*/},
+            // _ => {}
         }
     }
 }

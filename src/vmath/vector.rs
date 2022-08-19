@@ -1,4 +1,4 @@
-use std::ops::Sub;
+use std::ops::{Sub, Add, Mul};
 use num::Float;
 
 #[derive(Clone, Copy, Debug)]
@@ -31,6 +31,20 @@ impl<T: Float> Sub<Vector3<T>> for Vector3<T> {
     type Output = Vector3<T>;
     fn sub(self, rhs: Vector3<T>) -> Self::Output {
         Self::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl<T: Float> Add<Vector3<T>> for Vector3<T> {
+    type Output = Vector3<T>;
+    fn add(self, rhs: Vector3<T>) -> Self::Output {
+        Self::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl<T: Float> Mul<T> for Vector3<T> {
+    type Output = Vector3<T>;
+    fn mul(self, rhs: T) -> Self::Output {
+        Self::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
