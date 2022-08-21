@@ -283,7 +283,7 @@ impl State {
             camera.get_camera_bind_groups(&device);
 
 
-        let clear_color = wgpu::Color::WHITE;
+        let clear_color = wgpu::Color::GREEN;
 
         //Создаём шейдерный модуль
         /*let shader = device.create_shader_module(
@@ -560,8 +560,8 @@ pub async fn run() {
 
     #[cfg(target_arch = "wasm32")]
     {
-        use winit::dpi::PhysicalSize;
         window.set_inner_size(PhysicalSize::new(WIDTH, HEIGHT));
+        //window.set_cursor_visible(false);
         
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
@@ -597,7 +597,8 @@ pub async fn run() {
                     state.resize(*physical_size);
                 },
                 WindowEvent::ScaleFactorChanged {
-                    new_inner_size, ..
+                    new_inner_size, 
+                    ..
                 } => state.resize(**new_inner_size),
                 _ => {}
             }
