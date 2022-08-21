@@ -1,0 +1,12 @@
+{
+  "name": "ebenya",
+  "version": "0.1.0",
+  "files": [
+    "ebenya_bg.wasm",
+    "ebenya.js",
+    "ebenya.d.ts"
+  ],
+  "module": "ebenya.js",
+  "types": "ebenya.d.ts",
+  "sideEffects": false
+}

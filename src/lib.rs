@@ -4,7 +4,7 @@ use vmath::{
 };
 use winit::{
     event::*,
-    dpi::{PhysicalPosition, LogicalPosition},
+    dpi::{PhysicalPosition, LogicalPosition, PhysicalSize},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, Window},
 };
@@ -17,8 +17,8 @@ mod texture;
 mod vmath;
 mod camera;
 
-const WIDTH: f32 = 800.0;
-const HEIGHT: f32 = 600.0;
+const WIDTH: f32 = 1280.0;
+const HEIGHT: f32 = 1024.0;
 
 
 #[cfg(test)]
@@ -189,12 +189,12 @@ impl State {
         surface.configure(&device, &config);
 
         //Загружаем изображение
-        let diffuse_bytes = include_bytes!("cat.png");
+        let diffuse_bytes = include_bytes!("blue_texture.png");
         let diffuse_texture = texture::Texture::from_bytes(
             &device,
             &queue,
             diffuse_bytes,
-            "cat.png"
+            "blue_texture.png"
         ).unwrap();
         
 
@@ -273,11 +273,11 @@ impl State {
         let mut camera = camera::Camera::new(
         vmath::Vector3::new(0.0, 0.0, 0.0),
             vmath::Vector3::new(0.0, 0.0, 1.0),
-            90.0,
+            60.0,
             WIDTH,
             HEIGHT
         );
-        camera.update();
+        camera.update(instant::Duration::default());
 
         let (camera_bind_group_layout, camera_bind_group, camera_buffer) = 
             camera.get_camera_bind_groups(&device);
@@ -457,8 +457,8 @@ impl State {
         return false;
     }
 
-    fn update(&mut self) {
-        self.camera.update();
+    fn update(&mut self, delta_time: instant::Duration) {
+        self.camera.update(delta_time);
         self.queue.write_buffer(
             &self.camera_buffer,
             0,
@@ -543,9 +543,18 @@ pub async fn run() {
     
     let event_loop = EventLoop::new();
     let window = 
-        WindowBuilder::new().build(&event_loop).unwrap();
+        WindowBuilder::new()
+            .with_inner_size(PhysicalSize {
+                height: HEIGHT,
+                width: WIDTH,
+            })
+            .with_title("ebenya")
+            .with_position(PhysicalPosition { x: 0, y: 0 })
+            .build(&event_loop)
+            .unwrap();
     window.set_cursor_grab(true).unwrap();
-    //window.set_cursor_visible(false);
+    window.set_cursor_visible(false);
+    window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5));
     //window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
     //window.set_cursor_position(LogicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
 
@@ -566,6 +575,7 @@ pub async fn run() {
     }
 
     let mut state = State::new(&window).await;
+    let mut last_render_time = instant::Instant::now();
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -593,7 +603,11 @@ pub async fn run() {
             }
         },
         Event::RedrawRequested(window_id) if window_id == window.id() => {
-            state.update();
+            let now = instant::Instant::now();
+            let delta_time = now - last_render_time;
+            last_render_time = now;
+
+            state.update(delta_time);
             match state.render() {
                 Ok(_) => {}
                 // Reconfigure the surface if lost

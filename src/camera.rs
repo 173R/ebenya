@@ -1,3 +1,5 @@
+use std::f32::consts::FRAC_PI_2;
+
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
 use winit::{
     event::*,
@@ -61,29 +63,29 @@ impl Camera {
                 right: 0.0,
                 left: 0.0,
             },
-            speed: 0.1,
+            speed: 10.0,
             rotate_x: 0.0,
             rotate_y: 0.0,
             yaw: 0.0,
             pitch: 0.0,
-            sensitivity: 0.01,
+            sensitivity: 0.8,
             mode: CameraMode::Player
 
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, delta_time: instant::Duration) {
 
         println!("yaw: {:?}, pitch: {:?}", self.yaw.to_degrees(), self.pitch.to_degrees());
         let rotate = Matrix4x4::new_rotate(
             Vector3::new(0.0, 1.0, 0.0),
-            self.rotate_x * self.sensitivity
+            self.yaw
         ) * Matrix4x4::new_rotate(
             Vector3::new(1.0, 0.0, 0.0),
-            self.rotate_y * self.sensitivity
+            self.pitch
         );
 
-        self.target = rotate * self.target;
+        self.target = rotate * Vector3::new(0.0, 0.0, 1.0);
 
 
         let right = Vector3::new(0.0, 1.0, 0.0).cross(self.target) * (self.movement.right - self.movement.left);
@@ -93,7 +95,7 @@ impl Camera {
             forward.y = 0.0;
         }
 
-        self.position = self.position + (right + forward) * self.speed;
+        self.position = self.position + (right + forward) * self.speed * delta_time.as_secs_f32();
 
         let view = lookAt(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
@@ -102,8 +104,18 @@ impl Camera {
         self.uniform.view_proj = (proj * view).into();
         //println!("cam.pos = {:?}", self.position);
 
-        self.yaw += self.rotate_x * self.sensitivity;
-        self.pitch += self.rotate_y * self.sensitivity;
+        self.yaw += self.rotate_x * self.sensitivity * delta_time.as_secs_f32();
+        self.pitch += self.rotate_y * self.sensitivity * delta_time.as_secs_f32();
+
+        if self.pitch > FRAC_PI_2 {
+            self.pitch = FRAC_PI_2;
+        }
+
+        if self.pitch < -FRAC_PI_2 {
+            self.pitch = -FRAC_PI_2;
+        }
+
+        //if self.pitch > -FRAC_PI_2
 
 
         self.rotate_x = 0.0;
