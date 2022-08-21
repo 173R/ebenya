@@ -109,9 +109,55 @@ impl<T: Float + Default + Debug> Matrix4x4<T> {
     
         translation_matrix
     }
+
+    pub fn new_rotate(axis: Vector3<T>, angle: T) -> Self {
+        let one = T::one();
+        let zero = T::zero();
+        let cos = angle.cos();
+        let sin = angle.sin();
+        let axis = axis.normalize();
+
+        match axis {
+            vec if vec.x == T::one() => {
+                [
+                    [one, zero, zero, zero], 
+                    [zero, cos, sin, zero], 
+                    [zero, -sin, cos, zero], 
+                    [zero, zero, zero, one]
+                ].into()
+            },
+            vec if vec.y == T::one() => {
+                [
+                    [cos, zero, -sin, zero], 
+                    [zero, one, zero, zero], 
+                    [sin, zero, cos, zero], 
+                    [zero, zero, zero, one]
+                ].into()
+            },
+            vec if vec.z == T::one() => {
+                [
+                    [cos, sin, zero, zero],
+                    [-sin, cos, zero, zero], 
+                    [zero, zero, one, zero], 
+                    [zero, zero, zero, one]
+                ].into()
+            }
+            _ => panic!("{}", "Wrong axis")
+
+        }
+    }
 }
 
-
+impl<T: Float> Mul<Vector3<T>> for Matrix4x4<T> {
+    type Output = Vector3<T>;
+    fn mul(self, rhs: Vector3<T>) -> Self::Output {
+        Vector3::new(
+            self.data[0][0] * rhs.x + self.data[1][0] * rhs.y + self.data[2][0] * rhs.z + self.data[3][0],
+            self.data[0][1] * rhs.x + self.data[1][1] * rhs.y + self.data[2][1] * rhs.z + self.data[3][1],
+            self.data[0][2] * rhs.x + self.data[1][2] * rhs.y + self.data[2][2] * rhs.z + self.data[3][2],
+        )
+    }
+}
     
 
 // impl<T> Mul<Vector4<T>> for Matrix4x4<T>

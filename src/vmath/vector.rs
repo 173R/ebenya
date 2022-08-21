@@ -1,7 +1,7 @@
 use std::ops::{Sub, Add, Mul};
 use num::Float;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Vector3<T> {
     pub x: T,
     pub y: T,
@@ -47,6 +47,7 @@ impl<T: Float> Mul<T> for Vector3<T> {
         Self::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector4<T> {

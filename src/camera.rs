@@ -4,6 +4,12 @@ use winit::{
 };
 use crate::vmath::{Vector3, Matrix4x4, lookAt};
 
+#[derive(Debug, PartialEq)]
+enum CameraMode {
+    Player,
+    Free,
+}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
@@ -12,10 +18,10 @@ pub struct CameraUniform {
 
 #[derive(Debug)]
 pub struct CameraMovement {
-    left: bool,
-    right: bool,
-    forward: bool,
-    backward: bool,
+    forward: f32,
+    backward: f32,
+    left: f32,
+    right: f32,
 }
 
 #[derive(Debug)]
@@ -28,6 +34,12 @@ pub struct Camera {
     height: f32,
     movement: CameraMovement,
     speed: f32,
+    rotate_x: f32,
+    rotate_y: f32,
+    sensitivity: f32,
+    yaw: f32,
+    pitch: f32,
+    mode: CameraMode,
     //buffer: Option<wgpu::Buffer>,
     //bind_group: Option<wgpu::BindGroup>,
 }
@@ -44,37 +56,44 @@ impl Camera {
             width,
             height,
             movement: CameraMovement {
-                left: false,
-                right: false,
-                forward: false,
-                backward: false,
+                forward: 0.0,
+                backward: 0.0,
+                right: 0.0,
+                left: 0.0,
             },
             speed: 0.1,
+            rotate_x: 0.0,
+            rotate_y: 0.0,
+            yaw: 0.0,
+            pitch: 0.0,
+            sensitivity: 0.01,
+            mode: CameraMode::Player
 
         }
     }
 
     pub fn update(&mut self) {
 
-        let mut dir: Vector3<f32> = Vector3::new(0.0, 0.0, 0.0);
+        println!("yaw: {:?}, pitch: {:?}", self.yaw.to_degrees(), self.pitch.to_degrees());
+        let rotate = Matrix4x4::new_rotate(
+            Vector3::new(0.0, 1.0, 0.0),
+            self.rotate_x * self.sensitivity
+        ) * Matrix4x4::new_rotate(
+            Vector3::new(1.0, 0.0, 0.0),
+            self.rotate_y * self.sensitivity
+        );
 
-        if self.movement.left {
-            dir.x = -1.0;
+        self.target = rotate * self.target;
+
+
+        let right = Vector3::new(0.0, 1.0, 0.0).cross(self.target) * (self.movement.right - self.movement.left);
+        let mut forward = self.target * (self.movement.forward - self.movement.backward);
+
+        if self.mode == CameraMode::Player {
+            forward.y = 0.0;
         }
 
-        if self.movement.right {
-            dir.x = 1.0;
-        }
-
-        if self.movement.forward {
-            dir.z = 1.0;
-        }
-
-        if self.movement.backward {
-            dir.z = -1.0;
-        }
-
-        self.position = self.position + dir * self.speed;
+        self.position = self.position + (right + forward) * self.speed;
 
         let view = lookAt(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
@@ -82,6 +101,13 @@ impl Camera {
         );
         self.uniform.view_proj = (proj * view).into();
         //println!("cam.pos = {:?}", self.position);
+
+        self.yaw += self.rotate_x * self.sensitivity;
+        self.pitch += self.rotate_y * self.sensitivity;
+
+
+        self.rotate_x = 0.0;
+        self.rotate_y = 0.0;
     }
 
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
@@ -140,29 +166,30 @@ impl Camera {
                     },
                     ..
             } => {
-                let pressed = *state == ElementState::Pressed;
+                let offset: f32 = if *state == ElementState::Pressed { 1.0 } else { 0.0 };
+
                 match virtual_keycode {
                     Some(VirtualKeyCode::A | VirtualKeyCode::Left) => {
-                        self.movement.left = pressed;      
+                        self.movement.left = offset;      
                     },
                     Some(VirtualKeyCode::D | VirtualKeyCode::Right) => {
-                        self.movement.right = pressed;  
+                        self.movement.right = offset;  
                     },
                     Some(VirtualKeyCode::W | VirtualKeyCode::Up) => {
-                        self.movement.forward = pressed;    
+                        self.movement.forward = offset;    
                     },
                     Some(VirtualKeyCode::S | VirtualKeyCode::Down) => {
-                        self.movement.backward = pressed;    
+                        self.movement.backward = offset;    
                     },
                     _ => {}
                 }
             },
             _ => {}
-            // WindowEvent::CursorMoved { 
-            //     position,
-            //     ..
-            // } => { /*println!("cursor: {:?}", position)*/},
-            // _ => {}
         }
+    }
+
+    pub fn mouse_events(&mut self, delta_x: f32, delta_y: f32,) {
+        self.rotate_x = delta_x;
+        self.rotate_y = delta_y;
     }
 }

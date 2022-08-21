@@ -4,6 +4,7 @@ use vmath::{
 };
 use winit::{
     event::*,
+    dpi::{PhysicalPosition, LogicalPosition},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, Window},
 };
@@ -16,10 +17,15 @@ mod texture;
 mod vmath;
 mod camera;
 
+const WIDTH: f32 = 800.0;
+const HEIGHT: f32 = 600.0;
+
 
 #[cfg(test)]
 mod tests {
-    use crate::vmath::Matrix4x4;
+    //use cgmath::Vector3;
+
+    use crate::vmath::{Matrix4x4, Vector3};
 
     use super::*;
     #[test]
@@ -30,14 +36,16 @@ mod tests {
         // let matrix_s: Matrix4x4<f32> =
         //     vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
 
-        let matrix_t: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_scale(&[2.1, 2.2, 2.3, 1.0]);
-
-        let aaa = 
-            vmath::Vector3::new(1.0, 0.0, 0.0).cross(vmath::Vector3::new(0.0, 0.0, 1.0)); 
-        let vect = vmath::Vector3::new(-5.0, 10.0, -2.0).normalize();
-        let vect2 = vmath::Vector3::new(5.0, 10.0, 2.0).normalize();
-
+        let matrix_t: Matrix4x4<f32> = [
+            [1.0,4.0,5.0,0.0],
+            [2.0,1.0,3.0,0.0],
+            [2.0,5.0,1.0,0.0],
+            [0.0,0.0,0.0,1.0]
+        ].into();
+    
+        let aaa = matrix_t * Vector3::new(1.0, 2.0, 3.0);
+        let vect = Vector3::new(-5.0, 10.0, -2.0).normalize();
+        let vect2 = Vector3::new(5.0, 10.0, 2.0).normalize();
 
         //let matrix_t: Matrix4x4<f32> =
         //    vmath::Matrix4x4::new_perspective(2560.0, 1440.0, );
@@ -59,58 +67,6 @@ mod tests {
     }
 }
 
-/*
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct CameraUniform {
-    view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    fn new() -> Self {
-        use cgmath::SquareMatrix;
-        Self {
-            view_proj: cgmath::Matrix4::identity().into(),
-        }
-    }
-
-    fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
-    }
-}
-
-*/
-
-/*#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.0, 0.0, 0.5, 1.0,
-);
-
-struct Camera {
-    eye: cgmath::Point3<f32>,
-    target: cgmath::Point3<f32>,
-    up: cgmath::Vector3<f32>,
-    aspect: f32,
-    fovy: f32,
-    znear: f32,
-    zfar: f32,
-}
-
-impl Camera {
-    fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        // 1.
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        // 2.
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-
-        // 3.
-        return OPENGL_TO_WGPU_MATRIX * proj * view;
-    }
-}
-*/
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -147,10 +103,10 @@ impl Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [2.0, -2.0, 10.0], tex_coords: [1.0, 1.0], }, // A
+    Vertex { position: [2.0, -2.0, 4.0], tex_coords: [1.0, 1.0], }, // A
     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
-    Vertex { position: [2.0, 2.0, 10.0], tex_coords: [1.0, 0.0], }, // A
+    Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
     
     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
@@ -318,8 +274,8 @@ impl State {
         vmath::Vector3::new(0.0, 0.0, 0.0),
             vmath::Vector3::new(0.0, 0.0, 1.0),
             90.0,
-            800.0,
-            600.0
+            WIDTH,
+            HEIGHT
         );
         camera.update();
 
@@ -586,12 +542,17 @@ pub async fn run() {
     }
     
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = 
+        WindowBuilder::new().build(&event_loop).unwrap();
+    window.set_cursor_grab(true).unwrap();
+    //window.set_cursor_visible(false);
+    //window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
+    //window.set_cursor_position(LogicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
 
     #[cfg(target_arch = "wasm32")]
     {
         use winit::dpi::PhysicalSize;
-        window.set_inner_size(PhysicalSize::new(800, 600));
+        window.set_inner_size(PhysicalSize::new(WIDTH, HEIGHT));
         
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
@@ -643,6 +604,12 @@ pub async fn run() {
                 Err(e) => eprintln!("{:?}", e),
             }
         },
+        Event::DeviceEvent {  
+            event: DeviceEvent::MouseMotion {
+                delta
+            },
+            ..
+        } => state.camera.mouse_events(delta.0 as f32, delta.1 as f32),
         Event::MainEventsCleared => {
             //Получается этот ивент тригерится первый раз при создании окна??
             //И потом запрашивает перерисовку
