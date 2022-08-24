@@ -17,8 +17,8 @@ mod texture;
 mod vmath;
 mod camera;
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 1024.0;
+const WIDTH: f32 = 400.0;
+const HEIGHT: f32 = 300.0;
 
 
 #[cfg(test)]
@@ -283,7 +283,7 @@ impl State {
             camera.get_camera_bind_groups(&device);
 
 
-        let clear_color = wgpu::Color::GREEN;
+        let clear_color = wgpu::Color::WHITE;
 
         //Создаём шейдерный модуль
         /*let shader = device.create_shader_module(

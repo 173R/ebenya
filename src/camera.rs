@@ -4,7 +4,7 @@ use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
 use winit::{
     event::*,
 };
-use crate::vmath::{Vector3, Matrix4x4, lookAt};
+use crate::vmath::{Vector3, Matrix4x4};
 
 #[derive(Debug, PartialEq)]
 enum CameraMode {
@@ -68,7 +68,7 @@ impl Camera {
             rotate_y: 0.0,
             yaw: 0.0,
             pitch: 0.0,
-            sensitivity: 0.8,
+            sensitivity: 0.2,
             mode: CameraMode::Player
 
         }
@@ -97,7 +97,7 @@ impl Camera {
 
         self.position = self.position + (right + forward) * self.speed * delta_time.as_secs_f32();
 
-        let view = lookAt(self.position, self.target);
+        let view = Matrix4x4::new_lookAt(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
             self.width, self.height, 0.1, 100.0, self.fov
         );

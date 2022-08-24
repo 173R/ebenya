@@ -1,10 +1,11 @@
 mod vector;
 mod matrix;
-mod lookAt;
+mod matrix4x4;
+
+use matrix::*;
 
 pub use vector::*;
-pub use matrix::*;
-pub use lookAt::*;
+pub use matrix4x4::*;
 
 //То есть тут mod отвечает именно за инициализацию модуля, а реализация в файле vector.rs,
 //а mod в lib.rs отвечает за подключение этого модуля глобальную область видимости???, что бы к нему можно было обращаться из других модулей
