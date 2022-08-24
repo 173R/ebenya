@@ -107,6 +107,11 @@ const VERTICES: &[Vertex] = &[
     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
     Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
+
+    Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
+    Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
+    Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
+    Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
     
     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
@@ -118,6 +123,9 @@ const VERTICES: &[Vertex] = &[
 const INDICES: &[u16] = &[
     0, 3, 2,
     2, 1, 0,
+
+    4, 7, 6,
+    6, 5, 4,
 ];
 
 struct State {
@@ -139,6 +147,7 @@ struct State {
     camera: camera::Camera,
     camera_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
+    depth_texture: texture::Texture,
 }
 
 impl State {
@@ -300,6 +309,9 @@ impl State {
             wgpu::include_wgsl!("shader.wgsl")
         );
 
+        //Текстура глубины
+        let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
+
         //Создаём графичсекий конвейер
 
         let render_pipeline_layout = device.create_pipeline_layout(
@@ -358,7 +370,13 @@ impl State {
                     // Requires Features::CONSERVATIVE_RASTERIZATION
                     conservative: false,
                 },
-                depth_stencil: None,
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: texture::Texture::DEPTH_FORMAT,
+                    depth_write_enabled: true,
+                    depth_compare: wgpu::CompareFunction::Less,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
                 multisample: wgpu::MultisampleState {
                     //Сколько сэмплов будет использовать конвейер
                     count: 1,
@@ -414,7 +432,8 @@ impl State {
             //camera_uniform,
             //camera_buffer,
             camera_bind_group,
-            camera_buffer
+            camera_buffer,
+            depth_texture
         }
     }
 
@@ -424,6 +443,8 @@ impl State {
             self.config.width = new_size.width;
             self.config.width = new_size.width;
             self.surface.configure(&self.device, &self.config);
+            //Обновление текстуры глубины
+            self.depth_texture = texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
     }
 
@@ -497,7 +518,14 @@ impl State {
                             store: true,
                         },
                     })],
-                    depth_stencil_attachment: None,
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &self.depth_texture.view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: true,
+                        }),
+                        stencil_ops: None,
+                    }),
                 }
         );
 

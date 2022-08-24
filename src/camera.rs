@@ -68,7 +68,7 @@ impl Camera {
             rotate_y: 0.0,
             yaw: 0.0,
             pitch: 0.0,
-            sensitivity: 0.2,
+            sensitivity: 0.008,
             mode: CameraMode::Player
 
         }
@@ -104,8 +104,8 @@ impl Camera {
         self.uniform.view_proj = (proj * view).into();
         //println!("cam.pos = {:?}", self.position);
 
-        self.yaw += self.rotate_x * self.sensitivity * delta_time.as_secs_f32();
-        self.pitch += self.rotate_y * self.sensitivity * delta_time.as_secs_f32();
+        self.yaw += self.rotate_x * self.sensitivity;// * delta_time.as_secs_f32();
+        self.pitch += self.rotate_y * self.sensitivity; //* delta_time.as_secs_f32();
 
         if self.pitch > FRAC_PI_2 {
             self.pitch = FRAC_PI_2;
