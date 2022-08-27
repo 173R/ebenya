@@ -6,7 +6,7 @@ use crate::vmath::{SquareMatrix, Vector3};
 
 pub type Matrix4x4<T> = SquareMatrix<T, 4>;
 
-impl<T: Float + Default + Debug> Matrix4x4<T> {
+impl<T: Float + Default + Debug + std::ops::AddAssign> Matrix4x4<T> {
     pub fn new_perspective(width: T, height: T, near: T, far: T, fovy: T) -> Self {
         let aspect = width / height;
         let two: T = cast(2).unwrap();
@@ -31,27 +31,21 @@ impl<T: Float + Default + Debug> Matrix4x4<T> {
         translation_matrix
     }
 
-    pub fn new_lookAt(position: Vector3<T>, target: Vector3<T>) -> Self
-    where
-        T: std::ops::AddAssign
-    {
+    pub fn new_look_at(position: Vector3<T>, target: Vector3<T>) -> Self {
         //let dir = (target - position).normalize();
         let dir = target.normalize();
-        let right 
-            = Vector3::new(T::zero(), T::one(), T::zero()).cross(dir).normalize();
+        let right = Vector3::unit_y().cross(dir).normalize();
         let up = dir.cross(right); 
 
         Matrix4x4::from([
             [right.x, up.x, dir.x, T::zero()], 
             [right.y, up.y, dir.y, T::zero()],
             [right.z, up.z, dir.z, T::zero()],
-            [T::zero(), T::zero(), T::zero(), T::one()],
-        ]) * Matrix4x4::new_translation(
-            Vector3::new(-position.x, -position.y, -position.z)
-        )
+            [-right.dot(position), -up.dot(position), -dir.dot(position), T::one()],
+        ])
     }
 
-    pub fn new_rotate(axis: Vector3<T>, angle: T) -> Self {
+    /* pub fn new_rotate(axis: Vector3<T>, angle: T) -> Self {
         let one = T::one();
         let zero = T::zero();
         let cos = angle.cos();
@@ -86,7 +80,7 @@ impl<T: Float + Default + Debug> Matrix4x4<T> {
             _ => panic!("{}", "Wrong axis")
 
         }
-    }
+    } */
 }
 
 impl<T: Float> Mul<Vector3<T>> for Matrix4x4<T> {

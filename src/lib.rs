@@ -4,7 +4,7 @@ use vmath::{
 };
 use winit::{
     event::*,
-    dpi::{PhysicalPosition, LogicalPosition, PhysicalSize},
+    dpi::{PhysicalPosition, PhysicalSize},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, Window},
 };
@@ -17,8 +17,8 @@ mod texture;
 mod vmath;
 mod camera;
 
-const WIDTH: f32 = 400.0;
-const HEIGHT: f32 = 300.0;
+const WIDTH: f32 = 1280.0;
+const HEIGHT: f32 = 1240.0;
 
 
 #[cfg(test)]
@@ -103,15 +103,22 @@ impl Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
+    Vertex { position: [0.5, -0.5, 4.0], tex_coords: [1.0, 1.0], }, // A
+    Vertex { position: [-0.5, -0.5, 4.0], tex_coords: [0.0, 1.0], }, // A
+    Vertex { position: [-0.5, 0.5, 4.0], tex_coords: [0.0, 0.0], }, // A
+    Vertex { position: [0.5, 0.5, 4.0], tex_coords: [1.0, 0.0], }, // A
+
+
+
     Vertex { position: [2.0, -2.0, 4.0], tex_coords: [1.0, 1.0], }, // A
     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
     Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
 
-    Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
-    Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
-    Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
-    Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
+    // Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
+    // Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
+    // Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
+    // Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
     
     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
@@ -449,31 +456,14 @@ impl State {
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
-        // match event {
-        //     WindowEvent::CursorMoved {
-        //         position,
-        //         ..
-        //     } => {
-        //         self.clear_color.r = position.x / self.size.width as f64;
-        //         self.clear_color.g = position.y / self.size.height as f64;
-        //         self.clear_color.b = (position.x + position.y) / (self.size.width + self.size.height) as f64;
-        //         self.clear_color.a = 1.0;    
-        //     },
-        //     WindowEvent::KeyboardInput {
-        //         input:
-        //                 KeyboardInput {
-        //                     state: ElementState::Released,
-        //                     virtual_keycode: Some(VirtualKeyCode::Space),
-        //                     ..
-        //                 },
-        //             ..
-        //     } => {
-        //         self.space_on = !self.space_on;
-        //     },
-        //     _ => {}
-        // }
-
-        self.camera.poll_events(event);
+        match event {
+            WindowEvent::KeyboardInput { 
+                input,
+                .. 
+            } => self.camera.keyboard_events(&input),
+            _ => {}
+        }
+    
         
         return false;
     }
@@ -583,8 +573,6 @@ pub async fn run() {
     window.set_cursor_grab(true).unwrap();
     window.set_cursor_visible(false);
     window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5));
-    //window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
-    //window.set_cursor_position(LogicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
 
     #[cfg(target_arch = "wasm32")]
     {

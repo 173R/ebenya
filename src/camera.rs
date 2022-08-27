@@ -1,9 +1,9 @@
 use std::f32::consts::FRAC_PI_2;
-
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
 use winit::{
     event::*,
 };
+
 use crate::vmath::{Vector3, Matrix4x4};
 
 #[derive(Debug, PartialEq)]
@@ -68,7 +68,7 @@ impl Camera {
             rotate_y: 0.0,
             yaw: 0.0,
             pitch: 0.0,
-            sensitivity: 0.008,
+            sensitivity: 0.4,
             mode: CameraMode::Player
 
         }
@@ -77,35 +77,28 @@ impl Camera {
     pub fn update(&mut self, delta_time: instant::Duration) {
 
         println!("yaw: {:?}, pitch: {:?}", self.yaw.to_degrees(), self.pitch.to_degrees());
-        let rotate = Matrix4x4::new_rotate(
-            Vector3::new(0.0, 1.0, 0.0),
-            self.yaw
-        ) * Matrix4x4::new_rotate(
-            Vector3::new(1.0, 0.0, 0.0),
-            self.pitch
-        );
 
-        self.target = rotate * Vector3::new(0.0, 0.0, 1.0);
+        let (yaw_sin, yaw_cos) = self.yaw.sin_cos();
+        let (pitch_sin, pitch_cos) = self.pitch.sin_cos();
+        self.target = Vector3::new(yaw_sin * pitch_cos, -pitch_sin, pitch_cos * yaw_cos).normalize(); 
 
-
-        let right = Vector3::new(0.0, 1.0, 0.0).cross(self.target) * (self.movement.right - self.movement.left);
+        let right = Vector3::unit_y().cross(self.target) * (self.movement.right - self.movement.left);
         let mut forward = self.target * (self.movement.forward - self.movement.backward);
-
         if self.mode == CameraMode::Player {
             forward.y = 0.0;
         }
 
         self.position = self.position + (right + forward) * self.speed * delta_time.as_secs_f32();
 
-        let view = Matrix4x4::new_lookAt(self.position, self.target);
+        let view = Matrix4x4::new_look_at(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
             self.width, self.height, 0.1, 100.0, self.fov
         );
-        self.uniform.view_proj = (proj * view).into();
-        //println!("cam.pos = {:?}", self.position);
 
-        self.yaw += self.rotate_x * self.sensitivity;// * delta_time.as_secs_f32();
-        self.pitch += self.rotate_y * self.sensitivity; //* delta_time.as_secs_f32();
+        self.uniform.view_proj = (proj * view).into();
+
+        self.yaw += self.rotate_x * self.sensitivity * delta_time.as_secs_f32();
+        self.pitch += self.rotate_y * self.sensitivity * delta_time.as_secs_f32();
 
         if self.pitch > FRAC_PI_2 {
             self.pitch = FRAC_PI_2;
@@ -115,11 +108,10 @@ impl Camera {
             self.pitch = -FRAC_PI_2;
         }
 
-        //if self.pitch > -FRAC_PI_2
-
-
         self.rotate_x = 0.0;
         self.rotate_y = 0.0;
+
+        
     }
 
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
@@ -167,34 +159,21 @@ impl Camera {
         (bind_group_layout, bind_group, buffer)
     }
 
-    pub fn poll_events(&mut self, event: &WindowEvent) {
-        match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state,
-                        virtual_keycode,
-                        ..
-                    },
-                    ..
-            } => {
-                let offset: f32 = if *state == ElementState::Pressed { 1.0 } else { 0.0 };
+    pub fn keyboard_events(&mut self, input: &KeyboardInput) {
+        let offset: f32 = if input.state == ElementState::Pressed { 1.0 } else { 0.0 };
 
-                match virtual_keycode {
-                    Some(VirtualKeyCode::A | VirtualKeyCode::Left) => {
-                        self.movement.left = offset;      
-                    },
-                    Some(VirtualKeyCode::D | VirtualKeyCode::Right) => {
-                        self.movement.right = offset;  
-                    },
-                    Some(VirtualKeyCode::W | VirtualKeyCode::Up) => {
-                        self.movement.forward = offset;    
-                    },
-                    Some(VirtualKeyCode::S | VirtualKeyCode::Down) => {
-                        self.movement.backward = offset;    
-                    },
-                    _ => {}
-                }
+        match input.virtual_keycode {
+            Some(VirtualKeyCode::A | VirtualKeyCode::Left) => {
+                self.movement.left = offset;      
+            },
+            Some(VirtualKeyCode::D | VirtualKeyCode::Right) => {
+                self.movement.right = offset;  
+            },
+            Some(VirtualKeyCode::W | VirtualKeyCode::Up) => {
+                self.movement.forward = offset;    
+            },
+            Some(VirtualKeyCode::S | VirtualKeyCode::Down) => {
+                self.movement.backward = offset;    
             },
             _ => {}
         }

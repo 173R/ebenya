@@ -18,12 +18,28 @@ impl<T: Float> Vector3<T> {
         Self { x: self.x / length, y: self.y / length, z: self.z / length }
     }
 
-    pub fn cross(self, other: Vector3<T>) -> Vector3<T> {
-        Vector3::new(
+    pub fn cross(self, other: Vector3<T>) -> Self {
+        Self::new(
             (self.y * other.z) - (self.z * other.y),
             (self.z * other.x) - (self.x * other.z), 
             (self.x * other.y) - (self.y * other.x),
         )
+    }
+
+    pub fn dot(self, other: Vector3<T>) -> T {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn unit_y() -> Self {
+        Self::new(T::zero(), T::one(), T::zero())
+    }
+
+    pub fn unit_x() -> Self {
+        Self::new(T::one(), T::zero(), T::zero())
+    }
+
+    pub fn unit_z() -> Self {
+        Self::new(T::zero(), T::zero(), T::one())
     }
 }
 
@@ -62,10 +78,3 @@ impl<T> Vector4<T> {
         Self { x, y, z, w }
     }
 }
-
-
-// impl<T> From<Vector4<T>> for [T; 4] {
-//     fn from(v: Vector4<T>) -> Self {
-//         return [v.x, v.y, v.z, v.w ]
-//     }
-// }
