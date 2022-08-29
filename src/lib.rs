@@ -1,4 +1,4 @@
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, Instance};
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
@@ -9,7 +9,9 @@ use winit::{
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-use model::Vertex;
+//use model::Vertex;
+use crate::vmath::{Vector3, Matrix4x4};
+
 
 mod texture;
 mod vmath;
@@ -69,72 +71,72 @@ mod tests {
 }
 
 
-// #[repr(C)]
-// #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-// struct Vertex {
-//     position: [f32; 3],
-//     tex_coords: [f32; 2]
-// }
+ #[repr(C)]
+ #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+ struct Vertex {
+     position: [f32; 3],
+     tex_coords: [f32; 2]
+ }
 
-// impl Vertex {
-//     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-//         //Определяем как буфер будет распределён в памяти
-//         wgpu::VertexBufferLayout {
-//             //шаг или ширина вертекса (24 байта)
-//             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-//             step_mode: wgpu::VertexStepMode::Vertex,
-//             //Описание каждой части вершины
-//             attributes: &[
-//                 wgpu::VertexAttribute {
-//                     //начальное смещение
-//                     offset: 0,
-//                     //Задаём соответсвие локации к набору данных
-//                     shader_location: 0,
-//                     //Форма данных
-//                     format: wgpu::VertexFormat::Float32x3,
-//                 },
-//                 wgpu::VertexAttribute {
-//                     offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-//                     shader_location: 1,
-//                     format: wgpu::VertexFormat::Float32x2,
-//                 }
-//             ]
-//         }
-//     }
-// }
+impl Vertex {
+     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+         //Определяем как буфер будет распределён в памяти
+         wgpu::VertexBufferLayout {
+             //шаг или ширина вертекса (24 байта)
+             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+             step_mode: wgpu::VertexStepMode::Vertex,
+             //Описание каждой части вершины
+             attributes: &[
+                 wgpu::VertexAttribute {
+                     //начальное смещение
+                     offset: 0,
+                     //Задаём соответсвие локации к набору данных
+                     shader_location: 0,
+                     //Форма данных
+                     format: wgpu::VertexFormat::Float32x3,
+                 },
+                 wgpu::VertexAttribute {
+                     offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                     shader_location: 1,
+                     format: wgpu::VertexFormat::Float32x2,
+                 }
+             ]
+         }
+     }
+ }
 
-// const VERTICES: &[Vertex] = &[
-//     Vertex { position: [0.5, -0.5, 4.0], tex_coords: [1.0, 1.0], }, // A
-//     Vertex { position: [-0.5, -0.5, 4.0], tex_coords: [0.0, 1.0], }, // A
-//     Vertex { position: [-0.5, 0.5, 4.0], tex_coords: [0.0, 0.0], }, // A
-//     Vertex { position: [0.5, 0.5, 4.0], tex_coords: [1.0, 0.0], }, // A
+ const VERTICES: &[Vertex] = &[
+     Vertex { position: [0.5, -0.5, 4.0], tex_coords: [1.0, 1.0], }, // A
+     Vertex { position: [-0.5, -0.5, 4.0], tex_coords: [0.0, 1.0], }, // A
+     Vertex { position: [-0.5, 0.5, 4.0], tex_coords: [0.0, 0.0], }, // A
+     Vertex { position: [0.5, 0.5, 4.0], tex_coords: [1.0, 0.0], }, // A
 
 
 
-//     Vertex { position: [2.0, -2.0, 4.0], tex_coords: [1.0, 1.0], }, // A
-//     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
-//     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
-//     Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
+     Vertex { position: [2.0, -2.0, 4.0], tex_coords: [1.0, 1.0], }, // A
+     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
+     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
+     Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
 
-//     // Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
-//     // Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
-//     // Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
-//     // Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
+     // Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
+     // Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
+     // Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
+     // Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
     
-//     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
-//     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
-//     //Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 0.949397], }, // C
-//     //Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 0.84732914], }, // D
-//     //Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 0.2652641], }, // E
-// ];
+     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
+     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
+     //Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 0.949397], }, // C
+     //Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 0.84732914], }, // D
+     //Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 0.2652641], }, // E
+ ];
 
-// const INDICES: &[u16] = &[
-//     0, 3, 2,
-//     2, 1, 0,
+ const INDICES: &[u16] = &[
+     0, 3, 2,
+     2, 1, 0,
 
-//     4, 7, 6,
-//     6, 5, 4,
-// ];
+     4, 7, 6,
+     6, 5, 4,
+ ];
 
 struct State {
     surface: wgpu::Surface,
@@ -156,14 +158,15 @@ struct State {
     camera_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
+
+    instances: Vec<Instance>,
+    instance_buffer: wgpu::Buffer,
 }
 
 impl State {
     async fn new(window: &Window) -> Self {
 
-        //let matrix: vmath::Matrix4x4<f64> = vmath::Matrix4x4::new();
 
-        /////
         let size = window.inner_size();
 
         //Инстанс самого wgpu
@@ -191,6 +194,7 @@ impl State {
             },
             None,
         ).await.unwrap();
+        
 
 
         //Конфигурируем surface
@@ -320,6 +324,44 @@ impl State {
         //Текстура глубины
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
+
+        //INSTANCES//
+
+        const NUM_INSTANCES_PER_ROW: u32 = 10;
+        const INSTANCE_DISPLACEMENT: Vector3<f32> = 
+            Vector3::new(
+                NUM_INSTANCES_PER_ROW as f32 * 0.5,
+                0.0, 
+                NUM_INSTANCES_PER_ROW as f32 * 0.5
+            );
+
+        let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
+            (0..NUM_INSTANCES_PER_ROW).map(move |x| {
+                let position = Vector3::new(x as f32, 0.0, z as f32);
+
+                let rotation = Matrix4x4::new_rotate(Vector3::unit_y(), 45.0);
+            
+            
+                instance::Instance {
+                    position, rotation,
+                }
+            })
+        }).collect::<Vec<_>>();
+
+        let instance_data =
+            instances.iter().map(instance::Instance::to_raw).collect::<Vec<_>>();
+        
+        let instance_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&instance_data),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
+        //INSTANCES//
+
+
         //Создаём графичсекий конвейер
 
         let render_pipeline_layout = device.create_pipeline_layout(
@@ -345,8 +387,8 @@ impl State {
                     entry_point: "vs_main",
                     //Указываем структуру буфера
                     buffers: &[
-                        model::ModelVertex::desc(),
-                        InstanceRaw::desc()
+                        //Vertex::desc(),
+                        instance::InstanceRaw::desc()
                     ],
                 },
                 //@fragment
@@ -442,7 +484,9 @@ impl State {
             //camera_buffer,
             camera_bind_group,
             camera_buffer,
-            depth_texture
+            depth_texture,
+            instances,
+            instance_buffer,
         }
     }
 

@@ -32,7 +32,6 @@ impl<T: Float + Default + Debug + std::ops::AddAssign> Matrix4x4<T> {
     }
 
     pub fn new_look_at(position: Vector3<T>, target: Vector3<T>) -> Self {
-        //let dir = (target - position).normalize();
         let dir = target.normalize();
         let right = Vector3::unit_y().cross(dir).normalize();
         let up = dir.cross(right); 
