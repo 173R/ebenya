@@ -1,4 +1,4 @@
-use wgpu::{util::DeviceExt, Instance};
+use wgpu::{util::DeviceExt};
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
@@ -9,7 +9,7 @@ use winit::{
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-//use model::Vertex;
+use model::Vertex;
 use crate::vmath::{Vector3, Matrix4x4};
 
 
@@ -18,125 +18,10 @@ mod vmath;
 mod camera;
 mod model;
 mod instance;
+mod resources;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 1240.0;
-
-
-
-#[cfg(test)]
-mod tests {
-    //use cgmath::Vector3;
-
-    use crate::vmath::{Matrix4x4, Vector3};
-
-    use super::*;
-    #[test]
-    fn it_works() {
-        let matrix: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_indent();
-
-        // let matrix_s: Matrix4x4<f32> =
-        //     vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
-
-        let matrix_t: Matrix4x4<f32> = [
-            [1.0,4.0,5.0,0.0],
-            [2.0,1.0,3.0,0.0],
-            [2.0,5.0,1.0,0.0],
-            [0.0,0.0,0.0,1.0]
-        ].into();
-    
-        let aaa = matrix_t * Vector3::new(1.0, 2.0, 3.0);
-        let vect = Vector3::new(-5.0, 10.0, -2.0).normalize();
-        let vect2 = Vector3::new(5.0, 10.0, 2.0).normalize();
-
-        //let matrix_t: Matrix4x4<f32> =
-        //    vmath::Matrix4x4::new_perspective(2560.0, 1440.0, );
-
-        //println!("{:?}", matrix);
-        // println!("{:?}", matrix_s);
-        // println!("{:?}", matrix_t);
-        // println!("{:?}", matrix * matrix_s);
-
-
-        //cgmath::Vector3
-        //cgmath::Matrix4::identity().into();
-        
-        //println!("{:?}", matrix * matrix_s);
-
-        //println!("{:?}", matrix_s);
-       //nalgebra::Matrix4::new_orthographic(left, right, bottom, top, znear, zfar)
-       //dbg!(10);
-    }
-}
-
-
- #[repr(C)]
- #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
- struct Vertex {
-     position: [f32; 3],
-     tex_coords: [f32; 2]
- }
-
-impl Vertex {
-     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-         //Определяем как буфер будет распределён в памяти
-         wgpu::VertexBufferLayout {
-             //шаг или ширина вертекса (24 байта)
-             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-             step_mode: wgpu::VertexStepMode::Vertex,
-             //Описание каждой части вершины
-             attributes: &[
-                 wgpu::VertexAttribute {
-                     //начальное смещение
-                     offset: 0,
-                     //Задаём соответсвие локации к набору данных
-                     shader_location: 0,
-                     //Форма данных
-                     format: wgpu::VertexFormat::Float32x3,
-                 },
-                 wgpu::VertexAttribute {
-                     offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                     shader_location: 1,
-                     format: wgpu::VertexFormat::Float32x2,
-                 }
-             ]
-         }
-     }
- }
-
- const VERTICES: &[Vertex] = &[
-     Vertex { position: [0.5, -0.5, 4.0], tex_coords: [1.0, 1.0], }, // A
-     Vertex { position: [-0.5, -0.5, 4.0], tex_coords: [0.0, 1.0], }, // A
-     Vertex { position: [-0.5, 0.5, 4.0], tex_coords: [0.0, 0.0], }, // A
-     Vertex { position: [0.5, 0.5, 4.0], tex_coords: [1.0, 0.0], }, // A
-
-
-
-     Vertex { position: [2.0, -2.0, 4.0], tex_coords: [1.0, 1.0], }, // A
-     Vertex { position: [-2.0, -2.0, 4.0], tex_coords: [0.0, 1.0], }, // A
-     Vertex { position: [-2.0, 2.0, 4.0], tex_coords: [0.0, 0.0], }, // A
-     Vertex { position: [2.0, 2.0, 4.0], tex_coords: [1.0, 0.0], }, // A
-
-     // Vertex { position: [2.0, -2.0, 5.0], tex_coords: [1.0, 1.0], }, // A
-     // Vertex { position: [-2.0, -2.0, 5.0], tex_coords: [0.0, 1.0], }, // A
-     // Vertex { position: [-2.0, 2.0, 5.0], tex_coords: [0.0, 0.0], }, // A
-     // Vertex { position: [2.0, 2.0, 5.0], tex_coords: [1.0, 0.0], }, // A
-    
-     //Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
-     //Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
-     //Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 0.949397], }, // C
-     //Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 0.84732914], }, // D
-     //Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 0.2652641], }, // E
- ];
-
- const INDICES: &[u16] = &[
-     0, 3, 2,
-     2, 1, 0,
-
-     4, 7, 6,
-     6, 5, 4,
- ];
 
 struct State {
     surface: wgpu::Surface,
@@ -146,21 +31,20 @@ struct State {
     size: winit::dpi::PhysicalSize<u32>,
     clear_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    num_vertices: u32,
-    num_indices: u32,
-    space_on: bool,
+    //vertex_buffer: wgpu::Buffer,
+    //index_buffer: wgpu::Buffer,
     diffuse_bind_group: wgpu::BindGroup,
     diffuse_texture: texture::Texture,
-    second_diffuse_bind_group: wgpu::BindGroup,
     camera: camera::Camera,
     camera_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
 
-    instances: Vec<Instance>,
+    instances: Vec<instance::Instance>,
     instance_buffer: wgpu::Buffer,
+    
+
+    obj_model: model::Model
 }
 
 impl State {
@@ -217,14 +101,6 @@ impl State {
             diffuse_bytes,
             "blue_texture.png"
         ).unwrap();
-        
-
-        let second_texture = texture::Texture::from_bytes(
-            &device,
-            &queue,
-            include_bytes!("blue_texture.png"),
-            "blue_texture.png"
-        ).unwrap();
 
         //Описываем набор ресурсов и то,
         //как к ним пожно получить доступ из шейдера
@@ -272,25 +148,6 @@ impl State {
             }
         );
 
-        let second_diffuse_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&second_texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&second_texture.sampler),
-                    }
-                ],
-                label: Some("diffuse_bind_group"),
-            }
-        );
-
-        //let view_matrix: Matrix4x4<f32> = Matrix4x4::new_indent();
-
         let mut camera = camera::Camera::new(
         vmath::Vector3::new(0.0, 0.0, 0.0),
             vmath::Vector3::new(0.0, 0.0, 1.0),
@@ -331,13 +188,13 @@ impl State {
         const INSTANCE_DISPLACEMENT: Vector3<f32> = 
             Vector3::new(
                 NUM_INSTANCES_PER_ROW as f32 * 0.5,
-                0.0, 
+                0.0,
                 NUM_INSTANCES_PER_ROW as f32 * 0.5
             );
 
         let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
             (0..NUM_INSTANCES_PER_ROW).map(move |x| {
-                let position = Vector3::new(x as f32, 0.0, z as f32);
+                let position = Vector3::new(x as f32, 0.0, z as f32) - INSTANCE_DISPLACEMENT;
 
                 let rotation = Matrix4x4::new_rotate(Vector3::unit_y(), 45.0);
             
@@ -387,7 +244,7 @@ impl State {
                     entry_point: "vs_main",
                     //Указываем структуру буфера
                     buffers: &[
-                        //Vertex::desc(),
+                        model::ModelVertex::desc(),
                         instance::InstanceRaw::desc()
                     ],
                 },
@@ -440,7 +297,7 @@ impl State {
         );
 
         //Создаём буфер вершин
-        let vertex_buffer = device.create_buffer_init(
+        /* let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 //Преобразуем вершины в формат &[u8]
@@ -455,12 +312,17 @@ impl State {
                 contents: bytemuck::cast_slice(INDICES),
                 usage: wgpu::BufferUsages::INDEX,
             }
-        );
+        ); */
 
-        let num_vertices = VERTICES.len() as u32;
-        let num_indices = INDICES.len() as u32;
+        //let num_vertices = VERTICES.len() as u32;
+        //let num_indices = INDICES.len() as u32;
 
-        let space_on = false;
+        let obj_model = resources::load_model(
+            "keytruck.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        ).await.unwrap();
 
         Self {
             surface,
@@ -470,14 +332,10 @@ impl State {
             size,
             clear_color,
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            num_vertices,
-            num_indices,
-            space_on,
+            //vertex_buffer,
+            //index_buffer,
             diffuse_bind_group,
             diffuse_texture,
-            second_diffuse_bind_group,
             camera,
             //camera,
             //camera_uniform,
@@ -487,6 +345,7 @@ impl State {
             depth_texture,
             instances,
             instance_buffer,
+            obj_model
         }
     }
 
@@ -567,22 +426,22 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline);
             //группа с текстурами и семплером
-            if self.space_on {
-                render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
-            } else {
-                render_pass.set_bind_group(0, &self.second_diffuse_bind_group, &[]);    
-            }
-            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+            //render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+
+            //render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             //параметры: номер слота, вершины
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            //render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             //Можно использовать только оидн индексный буфер
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            //render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             //нарисовать три вершины в одном экземляре
-            if !self.space_on {
-                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
-            } else {
-                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
-            }
+            //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+
+            let mesh = &self.obj_model.meshes[0];
+            let material = &self.obj_model.materials[mesh.material];
+        
+            use model::DrawModel;
+            render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
         }
         //Завершить буфер команд и отправить его в очередь
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -698,4 +557,51 @@ pub async fn run() {
         }
         _ => {}
     });
+}
+
+
+#[cfg(test)]
+mod tests {
+    //use cgmath::Vector3;
+
+    use crate::vmath::{Matrix4x4, Vector3};
+
+    use super::*;
+    #[test]
+    fn it_works() {
+        let matrix: Matrix4x4<f32> =
+            vmath::Matrix4x4::new_indent();
+
+        // let matrix_s: Matrix4x4<f32> =
+        //     vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
+
+        let matrix_t: Matrix4x4<f32> = [
+            [1.0,4.0,5.0,0.0],
+            [2.0,1.0,3.0,0.0],
+            [2.0,5.0,1.0,0.0],
+            [0.0,0.0,0.0,1.0]
+        ].into();
+    
+        let aaa = matrix_t * Vector3::new(1.0, 2.0, 3.0);
+        let vect = Vector3::new(-5.0, 10.0, -2.0).normalize();
+        let vect2 = Vector3::new(5.0, 10.0, 2.0).normalize();
+
+        //let matrix_t: Matrix4x4<f32> =
+        //    vmath::Matrix4x4::new_perspective(2560.0, 1440.0, );
+
+        //println!("{:?}", matrix);
+        // println!("{:?}", matrix_s);
+        // println!("{:?}", matrix_t);
+        // println!("{:?}", matrix * matrix_s);
+
+
+        //cgmath::Vector3
+        //cgmath::Matrix4::identity().into();
+        
+        //println!("{:?}", matrix * matrix_s);
+
+        //println!("{:?}", matrix_s);
+       //nalgebra::Matrix4::new_orthographic(left, right, bottom, top, znear, zfar)
+       //dbg!(10);
+    }
 }

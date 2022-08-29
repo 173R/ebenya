@@ -1,8 +1,8 @@
 use crate::vmath::{Matrix4x4, Vector3};
 
 pub struct Instance {
-    position: Vector3<f32>,
-    rotation: Matrix4x4<f32>,
+    pub position: Vector3<f32>,
+    pub rotation: Matrix4x4<f32>,
 }
 
 
