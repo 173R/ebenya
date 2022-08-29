@@ -45,42 +45,33 @@ impl<T: Float + Default + Debug + std::ops::AddAssign> Matrix4x4<T> {
         ])
     }
 
-    /* pub fn new_rotate(axis: Vector3<T>, angle: T) -> Self {
-        let one = T::one();
-        let zero = T::zero();
-        let cos = angle.cos();
-        let sin = angle.sin();
-        let axis = axis.normalize();
+    pub fn new_rotate(axis: Vector3<T>, angle: T) -> Self {
+        let (sin, cos) = angle.sin_cos();
 
-        match axis {
-            vec if vec.x == T::one() => {
-                [
-                    [one, zero, zero, zero], 
-                    [zero, cos, sin, zero], 
-                    [zero, -sin, cos, zero], 
-                    [zero, zero, zero, one]
-                ].into()
-            },
-            vec if vec.y == T::one() => {
-                [
-                    [cos, zero, -sin, zero], 
-                    [zero, one, zero, zero], 
-                    [sin, zero, cos, zero], 
-                    [zero, zero, zero, one]
-                ].into()
-            },
-            vec if vec.z == T::one() => {
-                [
-                    [cos, sin, zero, zero],
-                    [-sin, cos, zero, zero], 
-                    [zero, zero, one, zero], 
-                    [zero, zero, zero, one]
-                ].into()
-            }
-            _ => panic!("{}", "Wrong axis")
-
-        }
-    } */
+        [
+            [
+                cos + (axis.x * axis.x) * (T::one() - cos), 
+                axis.x * axis.y * (T::one() - cos) + axis.z * sin,
+                axis.z * axis.x * (T::one() - cos) + axis.y * sin,
+                T::zero(),
+            ],
+            [
+                axis.x * axis.y * (T::one() - cos) + axis.z * sin,
+                cos + (axis.y * axis.y) * (T::one() - cos),
+                axis.z * axis.y * (T::one() - cos) + axis.x * sin,
+                T::zero(),
+            ],
+            [
+                axis.x * axis.z * (T::one() - cos) + axis.y * sin,
+                axis.z * axis.y * (T::one() - cos) + axis.x * sin,
+                cos + (axis.z * axis.z) * (T::one() - cos),
+                T::zero(),
+            ],
+            [
+                T::zero(), T::zero(), T::zero(), T::one()
+            ],
+        ].into()
+    }
 }
 
 impl<T: Float> Mul<Vector3<T>> for Matrix4x4<T> {
