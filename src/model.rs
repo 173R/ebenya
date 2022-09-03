@@ -1,97 +1,99 @@
-use crate::texture::Texture;
-use std::ops::Range;
+use wgpu::VertexBufferLayout;
 
-pub trait Vertex {
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
+use crate::vmath::Vector3;
+
+pub struct Mesh {
+    vertexes: Vec<f32>,
+    indices:  Vec<u32>,
 }
 
-pub trait DrawModel<'a> {
-    fn draw_mesh(&mut self, mesh: &'a Mesh, material: &'a Material, camera_bind_group: &'a wgpu::BindGroup);
-    fn draw_mesh_instanced(
-        &mut self,
-        mesh: &'a Mesh,
-        material: &'a Material,
-        instances: Range<u32>,
-        camera_bind_group: &'a wgpu::BindGroup,
-    );
-
+pub struct Model {
+    pub position: Vector3<f32>,
+    pub meshes: Vec<Mesh>
 }
 
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
-where
-    'b: 'a,
-{
-    fn draw_mesh(&mut self, mesh: &'b Mesh, material: &'b Material, camera_bind_group: &'b wgpu::BindGroup) {
-        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
+impl Model {
+    pub fn new(file_name: &str, position: Vector3<f32>) -> Self {
+        let (models, materials) = tobj::load_obj(
+            file_name,
+            &tobj::LoadOptions::default()
+        ).expect("Failed to OBJ load file");
+
+        
+        let mut meshes: Vec<Mesh> = Vec::new();
+
+        for (i, m) in models.iter().enumerate() {
+            let mesh = &m.mesh;
+
+            meshes.push(Mesh { vertexes: mesh.positions.clone(), indices: mesh.indices.clone() });
+            
+            let mut next_face = 0;
+            for face in 0..mesh.face_arities.len() {
+                let end = next_face + mesh.face_arities[face] as usize;
+
+                let face_indices = &mesh.indices[next_face..end];
+
+                if !mesh.texcoord_indices.is_empty() {
+                    let texcoord_face_indices = &mesh.texcoord_indices[next_face..end];
+                }
+                if !mesh.normal_indices.is_empty() {
+                    let normal_face_indices = &mesh.normal_indices[next_face..end];
+                }
+    
+                next_face = end;
+            }
+
+            assert!(mesh.positions.len() % 3 == 0);
+
+            /* for (i, m) in materials.iter().enumerate() {
+                println!("material[{}].name = \'{}\'", i, m.name);
+                println!(
+                    "    material.Ka = ({}, {}, {})",
+                    m.ambient[0], m.ambient[1], m.ambient[2]
+                );
+                println!(
+                    "    material.Kd = ({}, {}, {})",
+                    m.diffuse[0], m.diffuse[1], m.diffuse[2]
+                );
+                println!(
+                    "    material.Ks = ({}, {}, {})",
+                    m.specular[0], m.specular[1], m.specular[2]
+                );
+                println!("    material.Ns = {}", m.shininess);
+                println!("    material.d = {}", m.dissolve);
+                println!("    material.map_Ka = {}", m.ambient_texture);
+                println!("    material.map_Kd = {}", m.diffuse_texture);
+                println!("    material.map_Ks = {}", m.specular_texture);
+                println!("    material.map_Ns = {}", m.shininess_texture);
+                println!("    material.map_Bump = {}", m.normal_texture);
+                println!("    material.map_d = {}", m.dissolve_texture);
+        
+                for (k, v) in &m.unknown_param {
+                    println!("    material.{} = {}", k, v);
+                }
+            } */
+        }
+
+
+        Self { position, meshes }
     }
 
-    fn draw_mesh_instanced(
-        &mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
-        instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup,
-    ) {
-        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, &material.bind_group, &[]);
-        self.set_bind_group(1, camera_bind_group, &[]);
-        self.draw_indexed(0..mesh.num_elements, 0, instances);
-    }
-}
-
-
-
-impl Vertex for ModelVertex {
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+    pub fn buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
+
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<ModelVertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
+            array_stride: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+            // We need to switch from using a step mode of Vertex to Instance
+            // This means that our shaders will only change to use the next
+            // instance when the shader starts processing a new instance
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {
                     offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
-                    shader_location: 2,
+                    shader_location: 5,
                     format: wgpu::VertexFormat::Float32x3,
                 },
             ],
         }
     }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ModelVertex {
-    pub position: [f32; 3],
-    pub tex_coords: [f32; 2],
-    pub normal: [f32; 3],
-}
-
-pub struct Material {
-    pub name: String,
-    pub diffuse_texture: Texture,
-    pub bind_group: wgpu::BindGroup,
-}
-
-pub struct Mesh {
-    pub name: String,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub num_elements: u32,
-    pub material: usize,
-}
-
-pub struct Model {
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
 }

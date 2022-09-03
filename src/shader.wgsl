@@ -44,8 +44,11 @@ fn vs_main(
     //var - переменная будем изменяема но необходимо задать тип
     var out: VertexOutput;
     //let - тип выводится, значение не может изменяться
-    out.clip_position =  camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
+    //out.clip_position =  camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
     
+    out.clip_position =  camera.view_proj * vec4<f32>(model.position, 1.0);
+    
+
     //out.clip_position = vec4<f32>(model.position, 1.0);
     out.tex_coords = model.tex_coords;
     return out;

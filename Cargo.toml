@@ -43,7 +43,6 @@ web-sys = { version = "0.3", features = [
     "Element",
     "Location",
 ]}
-reqwest = { version = "0.11" }
 
 [build-dependencies]
 anyhow = "1.0"

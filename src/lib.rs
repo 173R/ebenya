@@ -9,16 +9,14 @@ use winit::{
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-use model::Vertex;
 use crate::vmath::{Vector3, Matrix4x4};
 
 
 mod texture;
 mod vmath;
 mod camera;
-mod model;
 mod instance;
-mod resources;
+mod model;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 1240.0;
@@ -44,7 +42,7 @@ struct State {
     instance_buffer: wgpu::Buffer,
     
 
-    obj_model: model::Model
+    //obj_model: model::Model
 }
 
 impl State {
@@ -219,6 +217,7 @@ impl State {
         //INSTANCES//
 
 
+
         //Создаём графичсекий конвейер
 
         let render_pipeline_layout = device.create_pipeline_layout(
@@ -244,8 +243,9 @@ impl State {
                     entry_point: "vs_main",
                     //Указываем структуру буфера
                     buffers: &[
-                        model::ModelVertex::desc(),
-                        instance::InstanceRaw::desc()
+                        //model::ModelVertex::desc(),
+                        model::Model::buffer_layout(),
+                        //instance::InstanceRaw::desc()
                     ],
                 },
                 //@fragment
@@ -317,12 +317,15 @@ impl State {
         //let num_vertices = VERTICES.len() as u32;
         //let num_indices = INDICES.len() as u32;
 
-        let obj_model = resources::load_model(
-            "keytruck.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        ).await.unwrap();
+        let obj_model = model::Model::new("res/keytruck.obj", Vector3::new(0.0, 0.0, 0.0));
+
+        let obj_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
 
         Self {
             surface,
@@ -345,7 +348,7 @@ impl State {
             depth_texture,
             instances,
             instance_buffer,
-            obj_model
+            //obj_model
         }
     }
 
@@ -426,9 +429,9 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline);
             //группа с текстурами и семплером
-            //render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
 
-            //render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             //параметры: номер слота, вершины
             //render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
@@ -437,11 +440,9 @@ impl State {
             //нарисовать три вершины в одном экземляре
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
-            let mesh = &self.obj_model.meshes[0];
-            let material = &self.obj_model.materials[mesh.material];
-        
-            use model::DrawModel;
-            render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
+            
+            //use model::DrawModel;
+            //render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
         }
         //Завершить буфер команд и отправить его в очередь
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -562,46 +563,9 @@ pub async fn run() {
 
 #[cfg(test)]
 mod tests {
-    //use cgmath::Vector3;
-
-    use crate::vmath::{Matrix4x4, Vector3};
-
     use super::*;
     #[test]
     fn it_works() {
-        let matrix: Matrix4x4<f32> =
-            vmath::Matrix4x4::new_indent();
-
-        // let matrix_s: Matrix4x4<f32> =
-        //     vmath::Matrix4x4::new_translation(&[2.1, 2.2, 2.3, 1.0]);
-
-        let matrix_t: Matrix4x4<f32> = [
-            [1.0,4.0,5.0,0.0],
-            [2.0,1.0,3.0,0.0],
-            [2.0,5.0,1.0,0.0],
-            [0.0,0.0,0.0,1.0]
-        ].into();
-    
-        let aaa = matrix_t * Vector3::new(1.0, 2.0, 3.0);
-        let vect = Vector3::new(-5.0, 10.0, -2.0).normalize();
-        let vect2 = Vector3::new(5.0, 10.0, 2.0).normalize();
-
-        //let matrix_t: Matrix4x4<f32> =
-        //    vmath::Matrix4x4::new_perspective(2560.0, 1440.0, );
-
-        //println!("{:?}", matrix);
-        // println!("{:?}", matrix_s);
-        // println!("{:?}", matrix_t);
-        // println!("{:?}", matrix * matrix_s);
-
-
-        //cgmath::Vector3
-        //cgmath::Matrix4::identity().into();
-        
-        //println!("{:?}", matrix * matrix_s);
-
-        //println!("{:?}", matrix_s);
-       //nalgebra::Matrix4::new_orthographic(left, right, bottom, top, znear, zfar)
-       //dbg!(10);
+        let obj = model::Model::new("res/keytruck.obj", Vector3::new(0.0, 0.0, 0.0));
     }
 }
