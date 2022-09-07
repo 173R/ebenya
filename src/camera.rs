@@ -69,7 +69,7 @@ impl Camera {
             yaw: 0.0,
             pitch: 0.0,
             sensitivity: 0.4,
-            mode: CameraMode::Player
+            mode: CameraMode::Free
 
         }
     }
@@ -92,7 +92,7 @@ impl Camera {
 
         let view = Matrix4x4::new_look_at(self.position, self.target);
         let proj = Matrix4x4::new_perspective(
-            self.width, self.height, 0.1, 100.0, self.fov
+            self.width, self.height, 0.1, 1000.0, self.fov
         );
 
         self.uniform.view_proj = (proj * view).into();

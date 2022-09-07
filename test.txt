@@ -1,0 +1,10 @@
+Hello, world!Hello, world!Hello, world!
+Hello, world!
+default: text SystemTime { intervals: 133068438429107801 } 
+default: text 2022-09-05T09:34:04.899465400Z 
+default: text 09:35:40.516229 
+default: text DelayedFormat { date: Some(2022-09-05), time: Some(09:36:59.199113400), off: Some(("UTC", +00:00)), items: StrftimeItems { remainder: "%d/%m/%Y %H:%M", recons: [], d_fmt: [Numeric(Month, Zero), Literal("/"), Numeric(Day, Zero), Literal("/"), Numeric(YearMod100, Zero)], d_t_fmt: [Fixed(ShortWeekdayName), Space(" "), Fixed(ShortMonthName), Space(" "), Numeric(Day, Space), Space(" "), Numeric(Hour, Zero), Literal(":"), Numeric(Minute, Zero), Literal(":"), Numeric(Second, Zero), Space(" "), Numeric(Year, Zero)], t_fmt: [Numeric(Hour, Zero), Literal(":"), Numeric(Minute, Zero), Literal(":"), Numeric(Second, Zero)] } } 
+default: text 05/09/2022 09:37 
+default: text 05-09-2022 09:38:33 
+TIME: 05-09-2022 09:40:02, TAG: default, MSG: text 
+TIME: 05-09-2022 10:16:31, TAG: default, MSG: text 

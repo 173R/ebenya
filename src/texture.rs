@@ -16,7 +16,7 @@ impl Texture {
         config: &wgpu::SurfaceConfiguration,
         label: &str
     ) -> Self {
-        //У текстуры должен быть такой же размер как и у поверхностик окна.
+        //У текстуры должен быть такой же размер как и у поверхности окна.
         let size = wgpu::Extent3d {
             width: config.width,
             height: config.height,
@@ -61,7 +61,7 @@ impl Texture {
         bytes: &[u8], 
         label: &str
     ) -> Result<Self> {
-        let img = image::load_from_memory(bytes)?;
+        let img = image::load_from_memory(bytes)?;//.fliph();
         Self::from_image(device, queue, &img, Some(label))
     }
 
@@ -79,6 +79,7 @@ impl Texture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
+        
         let texture = device.create_texture(
             &wgpu::TextureDescriptor {
                 label,
@@ -88,6 +89,7 @@ impl Texture {
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            
             }
         );
 

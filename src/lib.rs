@@ -11,9 +11,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::vmath::{Vector3, Matrix4x4};
 
+mod vmath;
+mod log;
 
 mod texture;
-mod vmath;
 mod camera;
 mod instance;
 mod model;
@@ -29,8 +30,6 @@ struct State {
     size: winit::dpi::PhysicalSize<u32>,
     clear_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
-    //vertex_buffer: wgpu::Buffer,
-    //index_buffer: wgpu::Buffer,
     diffuse_bind_group: wgpu::BindGroup,
     diffuse_texture: texture::Texture,
     camera: camera::Camera,
@@ -42,12 +41,11 @@ struct State {
     instance_buffer: wgpu::Buffer,
     
 
-    //obj_model: model::Model
+    obj_model: model::Model
 }
 
 impl State {
     async fn new(window: &Window) -> Self {
-
 
         let size = window.inner_size();
 
@@ -92,12 +90,12 @@ impl State {
         surface.configure(&device, &config);
 
         //Загружаем изображение
-        let diffuse_bytes = include_bytes!("blue_texture.png");
+        let diffuse_bytes = include_bytes!("electric.jpg");
         let diffuse_texture = texture::Texture::from_bytes(
             &device,
             &queue,
             diffuse_bytes,
-            "blue_texture.png"
+            "electric.png"
         ).unwrap();
 
         //Описываем набор ресурсов и то,
@@ -296,35 +294,12 @@ impl State {
             }
         );
 
-        //Создаём буфер вершин
-        /* let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                //Преобразуем вершины в формат &[u8]
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
 
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        ); */
-
-        //let num_vertices = VERTICES.len() as u32;
-        //let num_indices = INDICES.len() as u32;
-
-        let obj_model = model::Model::new("res/keytruck.obj", Vector3::new(0.0, 0.0, 0.0));
-
-        let obj_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
+        let obj_model = model::Model::new(
+            "res/cube.obj",
+            Vector3::new(0.0, 0.0, 2.0),
+            &device,
+            model::ObjectFormat::GLTF
         );
 
         Self {
@@ -335,8 +310,6 @@ impl State {
             size,
             clear_color,
             render_pipeline,
-            //vertex_buffer,
-            //index_buffer,
             diffuse_bind_group,
             diffuse_texture,
             camera,
@@ -348,7 +321,7 @@ impl State {
             depth_texture,
             instances,
             instance_buffer,
-            //obj_model
+            obj_model
         }
     }
 
@@ -433,13 +406,14 @@ impl State {
 
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             //параметры: номер слота, вершины
-            //render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_vertex_buffer(0, self.obj_model.vertex_buffer.slice(..));
+            //render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             //Можно использовать только оидн индексный буфер
-            //render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_index_buffer(self.obj_model.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             //нарисовать три вершины в одном экземляре
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
+            render_pass.draw_indexed(0..self.obj_model.meshes[0].indices.len() as u32, 0, 0..1);
             
             //use model::DrawModel;
             //render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
@@ -566,6 +540,7 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let obj = model::Model::new("res/keytruck.obj", Vector3::new(0.0, 0.0, 0.0));
+        log::write("test", "text", None).unwrap();
+        //let obj = model::Model::new("res/keytruck.obj", Vector3::new(0.0, 0.0, 0.0));
     }
 }
