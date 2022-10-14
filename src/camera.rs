@@ -1,9 +1,4 @@
-use std::f32::consts::FRAC_PI_2;
-use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
-use winit::{
-    event::*,
-};
-
+use std::f32::consts::FRAC_PI_2; use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer}; use winit::{ event::*, };
 use crate::vmath::{Vector3, Matrix4x4};
 
 #[derive(Debug, PartialEq)]
@@ -60,15 +55,7 @@ impl Camera {
             movement: CameraMovement {
                 forward: 0.0,
                 backward: 0.0,
-                right: 0.0,
-                left: 0.0,
-            },
-            speed: 10.0,
-            rotate_x: 0.0,
-            rotate_y: 0.0,
-            yaw: 0.0,
-            pitch: 0.0,
-            sensitivity: 0.4,
+                right: 0.0, left: 0.0, }, speed: 10.0, rotate_x: 0.0, rotate_y: 0.0, yaw: 0.0, pitch: 0.0, sensitivity: 0.4,
             mode: CameraMode::Free
 
         }
@@ -76,7 +63,7 @@ impl Camera {
 
     pub fn update(&mut self, delta_time: instant::Duration) {
 
-        println!("yaw: {:?}, pitch: {:?}", self.yaw.to_degrees(), self.pitch.to_degrees());
+        //println!("yaw: {:?}, pitch: {:?}", self.yaw.to_degrees(), self.pitch.to_degrees());
 
         let (yaw_sin, yaw_cos) = self.yaw.sin_cos();
         let (pitch_sin, pitch_cos) = self.pitch.sin_cos();

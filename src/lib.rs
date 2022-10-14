@@ -1,4 +1,3 @@
-use wgpu::{util::DeviceExt};
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
@@ -9,14 +8,13 @@ use winit::{
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::vmath::{Vector3, Matrix4x4};
+use crate::vmath::{Vector3};
 
 mod vmath;
 mod log;
 
 mod texture;
 mod camera;
-mod instance;
 mod model;
 
 const WIDTH: f32 = 1280.0;
@@ -31,14 +29,11 @@ struct State {
     clear_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
     diffuse_bind_group: wgpu::BindGroup,
-    diffuse_texture: texture::Texture,
+    //diffuse_texture: texture::Texture,
     camera: camera::Camera,
     camera_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
-
-    instances: Vec<instance::Instance>,
-    instance_buffer: wgpu::Buffer,
     
 
     obj_model: model::Model
@@ -75,8 +70,6 @@ impl State {
             None,
         ).await.unwrap();
         
-
-
         //Конфигурируем surface
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT, //Текстуры будут юзаться для вывода на экран
@@ -88,15 +81,6 @@ impl State {
         };
 
         surface.configure(&device, &config);
-
-        //Загружаем изображение
-        let diffuse_bytes = include_bytes!("electric.jpg");
-        let diffuse_texture = texture::Texture::from_bytes(
-            &device,
-            &queue,
-            diffuse_bytes,
-            "electric.png"
-        ).unwrap();
 
         //Описываем набор ресурсов и то,
         //как к ним пожно получить доступ из шейдера
@@ -126,6 +110,13 @@ impl State {
             }
         );
 
+        let obj_model = model::Model::new(
+            "res/electric.gltf",
+            Vector3::new(0.0, 0.0, 0.0),
+            &device,
+            &queue,
+        ).unwrap();
+
         //Привязываем набор ресурсов
         let diffuse_bind_group = device.create_bind_group(
             &wgpu::BindGroupDescriptor {
@@ -133,11 +124,11 @@ impl State {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                        resource: wgpu::BindingResource::TextureView(&obj_model.material.texture.view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                        resource: wgpu::BindingResource::Sampler(&obj_model.material.texture.sampler),
                     }
                 ],
                 label: Some("diffuse_bind_group"),
@@ -160,16 +151,6 @@ impl State {
         let clear_color = wgpu::Color::WHITE;
 
         //Создаём шейдерный модуль
-        /*let shader = device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: Some("Shader"),
-                source: wgpu::ShaderSource::Wgsl(
-                    //Считываем файл в виде строки
-                    include_str!("shader.wgsl").into(),
-                )
-            }
-        );*/
-
         let shader = device.create_shader_module(
             wgpu::include_wgsl!("shader.wgsl")
         );
@@ -177,47 +158,7 @@ impl State {
         //Текстура глубины
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
-
-        //INSTANCES//
-
-        const NUM_INSTANCES_PER_ROW: u32 = 10;
-        const INSTANCE_DISPLACEMENT: Vector3<f32> = 
-            Vector3::new(
-                NUM_INSTANCES_PER_ROW as f32 * 0.5,
-                0.0,
-                NUM_INSTANCES_PER_ROW as f32 * 0.5
-            );
-
-        let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
-            (0..NUM_INSTANCES_PER_ROW).map(move |x| {
-                let position = Vector3::new(x as f32, 0.0, z as f32) - INSTANCE_DISPLACEMENT;
-
-                let rotation = Matrix4x4::new_rotate(Vector3::unit_y(), 45.0);
-            
-            
-                instance::Instance {
-                    position, rotation,
-                }
-            })
-        }).collect::<Vec<_>>();
-
-        let instance_data =
-            instances.iter().map(instance::Instance::to_raw).collect::<Vec<_>>();
-        
-        let instance_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&instance_data),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
-
-        //INSTANCES//
-
-
-
         //Создаём графичсекий конвейер
-
         let render_pipeline_layout = device.create_pipeline_layout(
             &wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
@@ -294,14 +235,6 @@ impl State {
             }
         );
 
-
-        let obj_model = model::Model::new(
-            "res/cube.obj",
-            Vector3::new(0.0, 0.0, 2.0),
-            &device,
-            model::ObjectFormat::GLTF
-        );
-
         Self {
             surface,
             device,
@@ -311,16 +244,10 @@ impl State {
             clear_color,
             render_pipeline,
             diffuse_bind_group,
-            diffuse_texture,
             camera,
-            //camera,
-            //camera_uniform,
-            //camera_buffer,
             camera_bind_group,
             camera_buffer,
             depth_texture,
-            instances,
-            instance_buffer,
             obj_model
         }
     }
