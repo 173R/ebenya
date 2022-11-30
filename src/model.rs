@@ -1,8 +1,9 @@
-use std::{fs, io::Read};
-
+use std::{fs, io::Read, mem, path::Path};
 use anyhow::Ok;
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, RenderPass, Buffer};
 use crate::{vmath, texture};
+
+const RESOURCES_PATH: &str = "res";
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -12,34 +13,72 @@ pub struct Vertex {
 }
 
 pub struct Mesh {
-    pub vertices: Vec<Vertex>,
+    //pub vertices: Vec<Vertex>,
     pub indices:  Vec<u32>,
+    pub vertex_buffer: Buffer,
+    pub index_buffer: Buffer,
 }
 
 pub struct Model {
     pub position: vmath::Vector3<f32>,
     pub meshes: Vec<Mesh>,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
     pub material: Material,
 }
 
 pub struct Material {
+    pub 
     pub name: String,
     pub texture: texture::Texture,
 }
 
 impl Model {
     pub fn new(file_name: &str, position: vmath::Vector3<f32>, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<Self, anyhow::Error> {
+        let path = Path::new(RESOURCES_PATH).join(file_name);
+        let gltf = gltf::Gltf::open(path)?;
 
-        let gltf = gltf::Gltf::open(file_name)?;
+        let mut images = Vec::new();
         let mut buffers = Vec::new();
+        let mut meshes: Vec<Mesh> = Vec::new();
+
+
+        for image in gltf.images() {
+            match image.source() {
+                gltf::image::Source::Uri {
+                    uri,
+                    ..
+                } => {
+                    let mut file = fs::File::open(Path::new(RESOURCES_PATH).join(uri))?;
+                    let mut buffer = Vec::new();
+                    file.read_to_end(&mut buffer)?;
+                    images.push(buffer);
+                }
+                _ => {}
+            }
+        }
+
+        for texture in gltf.textures() {
+            match texture.index() {
+                //!!!!!
+                /* let diffuse_texture = texture::Texture::from_bytes(
+                    &device,
+                    &queue,
+                    &images[4],
+                    &format!("{}_diffuse", file_name)
+                )?; */
+            }
+        }
+
+        for material in gltf.materials() {
+            match material.alpha_mode() {
+                
+            }
+        }
 
         for buffer in gltf.buffers() {
             match buffer.source() {
                 gltf::buffer::Source::Uri(uri) => {
                     println!("uri: {}", uri);
-                    let mut file = fs::File::open(format!("res/{uri}"))?;
+                    let mut file = fs::File::open( Path::new(RESOURCES_PATH).join(uri))?;
                     let mut buffer = Vec::new();
                     file.read_to_end(&mut buffer)?;
                     buffers.push(buffer);
@@ -48,7 +87,6 @@ impl Model {
             }
         }
 
-        let mut meshes: Vec<Mesh> = Vec::new();
 
         for mesh in gltf.meshes() {
             for primitive in mesh.primitives() {
@@ -58,6 +96,15 @@ impl Model {
                 let mut tex_coords: Vec<[f32; 2]> = Vec::new();
                 let mut indices: Vec<u32> = Vec::new();
                 let mut vertices: Vec<Vertex> = Vec::new();
+
+                let test = primitive
+                    .material()
+                    .pbr_metallic_roughness()
+                    .base_color_texture().unwrap()
+                    .texture()
+                    .index();
+
+                println!("{}", test);
 
                 if let Some(read_indices) = reader.read_indices() {
                     indices = read_indices.into_u32().collect::<Vec<_>>();
@@ -82,65 +129,43 @@ impl Model {
                     });
                 }
 
-                meshes.push(Mesh { vertices, indices });
-            }
-        }
+                let vertex_buffer = device.create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Model vertex buffer"),
+                        contents: bytemuck::cast_slice(&vertices),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    }
+                );
+        
+            
+                let index_buffer = device.create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Model index buffer"),
+                        contents: bytemuck::cast_slice(&indices),
+                        usage: wgpu::BufferUsages::INDEX,
+                    }
+                );
 
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Model vertex buffer"),
-                contents: bytemuck::cast_slice(&meshes[0].vertices),
-                //contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
-
-    
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Model index buffer"),
-                contents: bytemuck::cast_slice(&meshes[0].indices),
-                //contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
-
-        let mut textures = Vec::new(); 
-
-        for image in gltf.images() {
-            match image.source() {
-                gltf::image::Source::Uri {
-                    uri,
-                    mime_type
-                } => {
-                    let mut file = fs::File::open(format!("res/{uri}"))?;
-                    let mut buffer = Vec::new();
-                    file.read_to_end(&mut buffer)?;
-                    textures.push(buffer);
-                    println!("uri: {}, mime_type: {}", uri, mime_type.unwrap());
-                }
-                _ => {}
+                meshes.push(Mesh { /* vertices, */ indices, vertex_buffer, index_buffer });
             }
         }
 
         let diffuse_texture = texture::Texture::from_bytes(
             &device,
             &queue,
-            &textures[0],
-            "electric.png"
-        ).unwrap();
+            &images[4],
+            &format!("{}_diffuse", file_name)
+        )?;
 
         let material = Material {
             name: "aaa".to_string(),
             texture: diffuse_texture,
         };
 
-        Ok(Model { position, meshes, vertex_buffer, index_buffer, material })
+        Ok(Model { position, meshes, material })
     }
 
-    pub fn buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
-        use std::mem;
-
+    pub fn vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -156,6 +181,22 @@ impl Model {
                     format: wgpu::VertexFormat::Float32x2,
                 },
             ],
+        }
+    }
+}
+
+pub trait DrawModel<'a> {
+    fn draw_model(&mut self, model: &'a Model);
+}
+
+impl<'a> DrawModel<'a> for RenderPass<'a> {
+    fn draw_model(&mut self, model: &'a Model) {
+        for mesh in &model.meshes {
+            //self.set_bind_group(1, &self.camera_bind_group, &[]);
+
+            self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            self.draw_indexed(0..mesh.indices.len() as _ , 0, 0..1);
         }
     }
 }

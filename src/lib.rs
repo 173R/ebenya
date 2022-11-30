@@ -1,3 +1,4 @@
+use model::DrawModel;
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
@@ -26,7 +27,6 @@ struct State {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
-    clear_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
     diffuse_bind_group: wgpu::BindGroup,
     //diffuse_texture: texture::Texture,
@@ -111,7 +111,7 @@ impl State {
         );
 
         let obj_model = model::Model::new(
-            "res/electric.gltf",
+            "toy_car.gltf",
             Vector3::new(0.0, 0.0, 0.0),
             &device,
             &queue,
@@ -148,8 +148,6 @@ impl State {
             camera.get_camera_bind_groups(&device);
 
 
-        let clear_color = wgpu::Color::WHITE;
-
         //Создаём шейдерный модуль
         let shader = device.create_shader_module(
             wgpu::include_wgsl!("shader.wgsl")
@@ -183,7 +181,7 @@ impl State {
                     //Указываем структуру буфера
                     buffers: &[
                         //model::ModelVertex::desc(),
-                        model::Model::buffer_layout(),
+                        model::Model::vertex_buffer_layout(),
                         //instance::InstanceRaw::desc()
                     ],
                 },
@@ -241,7 +239,6 @@ impl State {
             queue,
             config,
             size,
-            clear_color,
             render_pipeline,
             diffuse_bind_group,
             camera,
@@ -311,7 +308,7 @@ impl State {
                         ops: wgpu::Operations {
                             //Указываем как обрабатывать цвета которые остались в пердыдущем кадре
                             //В нашем случае мы их очищаем, закрашивая всё цветом
-                            load: wgpu::LoadOp::Clear(self.clear_color),
+                            load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
                             //Сохранять результат в текстуре view
                             store: true,
                         },
@@ -332,15 +329,19 @@ impl State {
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
 
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+
             //параметры: номер слота, вершины
-            render_pass.set_vertex_buffer(0, self.obj_model.vertex_buffer.slice(..));
+            //   render_pass.set_vertex_buffer(0, self.obj_model.vertex_buffer.slice(..));
             //render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             //Можно использовать только оидн индексный буфер
-            render_pass.set_index_buffer(self.obj_model.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            //   render_pass.set_index_buffer(self.obj_model.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             //нарисовать три вершины в одном экземляре
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
-            render_pass.draw_indexed(0..self.obj_model.meshes[0].indices.len() as u32, 0, 0..1);
+            //  render_pass.draw_indexed(0..72, 0, 0..1);
+
+            render_pass.draw_model(&self.obj_model)
+
             
             //use model::DrawModel;
             //render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
