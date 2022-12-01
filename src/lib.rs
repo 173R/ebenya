@@ -1,4 +1,5 @@
 use model::DrawModel;
+use wgpu::BindGroupLayout;
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
@@ -28,12 +29,13 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-    diffuse_bind_group: wgpu::BindGroup,
+    //diffuse_bind_group: wgpu::BindGroup,
     //diffuse_texture: texture::Texture,
     camera: camera::Camera,
     camera_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
+    texture_bind_group_layout: BindGroupLayout,
     
 
     obj_model: model::Model
@@ -118,7 +120,7 @@ impl State {
         ).unwrap();
 
         //Привязываем набор ресурсов
-        let diffuse_bind_group = device.create_bind_group(
+        /* let diffuse_bind_group = device.create_bind_group(
             &wgpu::BindGroupDescriptor {
                 layout: &texture_bind_group_layout,
                 entries: &[
@@ -133,7 +135,7 @@ impl State {
                 ],
                 label: Some("diffuse_bind_group"),
             }
-        );
+        ); */
 
         let mut camera = camera::Camera::new(
         vmath::Vector3::new(0.0, 0.0, 0.0),
@@ -240,12 +242,13 @@ impl State {
             config,
             size,
             render_pipeline,
-            diffuse_bind_group,
+            //diffuse_bind_group,
             camera,
             camera_bind_group,
             camera_buffer,
             depth_texture,
-            obj_model
+            obj_model,
+            texture_bind_group_layout
         }
     }
 
@@ -326,7 +329,7 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline);
             //группа с текстурами и семплером
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            //render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
 
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
@@ -340,7 +343,8 @@ impl State {
 
             //  render_pass.draw_indexed(0..72, 0, 0..1);
 
-            render_pass.draw_model(&self.obj_model)
+
+            render_pass.draw_model(&self.obj_model, &self.device, &self.texture_bind_group_layout)
 
             
             //use model::DrawModel;
