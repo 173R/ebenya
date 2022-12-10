@@ -101,6 +101,16 @@ impl Camera {
         
     }
 
+    pub fn TEST_get_view_proj_matrix_buffer(&mut self, device: &wgpu::Device) -> Buffer {
+        device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("view_proj_buffer"),
+                contents: bytemuck::cast_slice(&[self.uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        )
+    }
+
     pub fn get_camera_bind_groups(&mut self, device: &wgpu::Device) -> (
         BindGroupLayout,
         BindGroup,

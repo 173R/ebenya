@@ -185,32 +185,12 @@ impl Model {
 }
 
 pub trait DrawModel<'a> {
-    fn draw_model(&mut self, model: &'a Model, device: &'a wgpu::Device, texture_bind_group_layout: &'a BindGroupLayout);
+    fn draw_model(&mut self, model: &'a Model);
 }
 
 impl<'a> DrawModel<'a> for RenderPass<'a> {
-    fn draw_model(&mut self, model: &'a Model, device: &'a wgpu::Device, texture_bind_group_layout: &'a BindGroupLayout) {
+    fn draw_model(&mut self, model: &'a Model) {
         for mesh in &model.meshes {
-            //Привящываем набор ресурсов
-            let diffuse_bind_group = device.create_bind_group(
-                &wgpu::BindGroupDescriptor {
-                    layout: &texture_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&mesh.material.texture.view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&mesh.material.texture.sampler),
-                        }
-                    ],
-                    label: Some("diffuse_bind_group"),
-                }
-            );
-
-            self.set_bind_group(0, &diffuse_bind_group, &[]);
-
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             self.draw_indexed(0..mesh.indices.len() as _ , 0, 0..1);

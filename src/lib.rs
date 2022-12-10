@@ -18,6 +18,7 @@ mod log;
 mod texture;
 mod camera;
 mod model;
+mod render;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 1240.0;
@@ -32,7 +33,7 @@ struct State {
     //diffuse_bind_group: wgpu::BindGroup,
     //diffuse_texture: texture::Texture,
     camera: camera::Camera,
-    camera_bind_group: wgpu::BindGroup,
+    common_bind_group: wgpu::BindGroup,
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
     texture_bind_group_layout: BindGroupLayout,
@@ -172,7 +173,16 @@ impl State {
             }
         );
 
-        let render_pipeline = device.create_render_pipeline(
+        let common = render::Common::new(&device);
+        let common_bind_group = common.bind_group(
+            &device,
+            &camera.TEST_get_view_proj_matrix_buffer(&device)
+        );
+
+        let render_pipeline = render::PrimitivePipeline::new(&device, &common, &config).pipeline;
+
+
+        /* let render_pipeline = device.create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Render Pipeline"),
                 layout: Some(&render_pipeline_layout),
@@ -233,7 +243,7 @@ impl State {
                 },
                 multiview: None,
             }
-        );
+        ); */
 
         Self {
             surface,
@@ -244,7 +254,7 @@ impl State {
             render_pipeline,
             //diffuse_bind_group,
             camera,
-            camera_bind_group,
+            common_bind_group,
             camera_buffer,
             depth_texture,
             obj_model,
@@ -331,7 +341,7 @@ impl State {
             //группа с текстурами и семплером
             //render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
 
-            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.common_bind_group, &[]);
 
             //параметры: номер слота, вершины
             //   render_pass.set_vertex_buffer(0, self.obj_model.vertex_buffer.slice(..));
@@ -341,10 +351,42 @@ impl State {
             //нарисовать три вершины в одном экземляре
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
-            //  render_pass.draw_indexed(0..72, 0, 0..1);
+            const VERTICES: &[render::Vertex] = &[
+                render::Vertex { pos: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+                render::Vertex { pos: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+                render::Vertex { pos: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+                render::Vertex { pos: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+                render::Vertex { pos: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+            ];
+
+            let vertex_buffer = device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(VERTICES),
+                    usage: wgpu::BufferUsages::VERTEX,
+                }
+            );
+            // NEW!
+            let index_buffer = device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: bytemuck::cast_slice(INDICES),
+                    usage: wgpu::BufferUsages::INDEX,
+                }
+            );
+
+            const INDICES: &[u16] = &[
+                0, 1, 4,
+                1, 2, 4,
+                2, 3, 4,
+            ];
+
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
+            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1); // 2.
 
 
-            render_pass.draw_model(&self.obj_model, &self.device, &self.texture_bind_group_layout)
+            render_pass.draw_model(&self.obj_model)
 
             
             //use model::DrawModel;
