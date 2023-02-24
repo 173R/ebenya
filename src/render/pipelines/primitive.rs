@@ -7,8 +7,8 @@ use crate::texture;
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    pos: [f32; 3],
-    color: [f32; 3]
+    pub pos: [f32; 3],
+    pub color: [f32; 3]
 }
 
 impl Vertex {
@@ -43,6 +43,11 @@ impl PrimitivePipeline {
         common: &common::Common,
         surface_config: &wgpu::SurfaceConfiguration
     ) -> Self {
+        /*let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
+            label: Some("primitive_shader"),
+            source: wgpu::ShaderSource::Glsl {}
+        });*/
+
         let primitive_shader = device.create_shader_module(
             wgpu::include_wgsl!("primitive.wgsl")
         );
@@ -113,6 +118,7 @@ impl PrimitivePipeline {
                         count: 1,
                         //Использовать все активные сэмплы
                         mask: !0,
+                        // для сглаживания (пока отключено)
                         alpha_to_coverage_enabled: false,
                     },
                     multiview: None,

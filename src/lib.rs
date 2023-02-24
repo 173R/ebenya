@@ -1,14 +1,14 @@
 use model::DrawModel;
-use wgpu::BindGroupLayout;
+use std::default;
+use wgpu::{BindGroupLayout, Dx12Compiler};
+use wgpu::util::DeviceExt;
 use winit::{
     event::*,
     dpi::{PhysicalPosition, PhysicalSize},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, Window},
 };
-
-#[cfg(target_arch="wasm32")]
-use wasm_bindgen::prelude::*;
+use winit::window::CursorGrabMode;
 
 use crate::vmath::{Vector3};
 
@@ -22,6 +22,20 @@ mod render;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 1240.0;
+
+const INDICES: &[u16] = &[
+    0, 1, 4,
+    1, 2, 4,
+    2, 3, 4,
+];
+
+const VERTICES: &[render::Vertex] = &[
+    render::Vertex { pos: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    render::Vertex { pos: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { pos: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+    render::Vertex { pos: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+    render::Vertex { pos: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+];
 
 struct State {
     surface: wgpu::Surface,
@@ -37,21 +51,24 @@ struct State {
     camera_buffer: wgpu::Buffer,
     depth_texture: texture::Texture,
     texture_bind_group_layout: BindGroupLayout,
-    
+
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
 
     obj_model: model::Model
 }
 
 impl State {
     async fn new(window: &Window) -> Self {
-
         let size = window.inner_size();
 
         //Инстанс самого wgpu
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::VULKAN,
+            dx12_shader_compiler: Dx12Compiler::default(),
+        });
         //Поверхность для отображения
-        let surface = unsafe { instance.create_surface(window)};
-        //Хэндлер видекарты
+        let surface = unsafe { instance.create_surface(&window)}.unwrap();
         let adapter = instance.request_adapter( 
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -63,30 +80,36 @@ impl State {
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::empty(),
-                limits: if cfg!(target_arch = "wasm32") { // задаём лимиты для максимальной поддержки всех бэкендов
-                    wgpu::Limits::downlevel_webgl2_defaults()
-                } else {
-                    wgpu::Limits::default()
-                },
+                limits: wgpu::Limits::default(),
                 label: None,
             },
             None,
         ).await.unwrap();
         
         //Конфигурируем surface
+
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps.formats.iter()
+            .copied()
+            .filter(|f| f.describe().srgb)
+            .next()
+            .unwrap_or(surface_caps.formats[0]);
+
         let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT, //Текстуры будут юзаться для вывода на экран
-            format: surface.get_supported_formats(&adapter)[0], // как будут хранится SurfaceTexture в GPU
+            //Текстуры будут юзаться для вывода на экран
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
             width: size.width,
             height: size.height,
             //Формат синхронизации поверхности с дисплеем, Fifo ограничивает частоту кадров, поодерживается везде, по сути это VSync
             present_mode: wgpu::PresentMode::Fifo,
+            //present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
         };
-
         surface.configure(&device, &config);
 
-        //Описываем набор ресурсов и то,
-        //как к ним пожно получить доступ из шейдера
+        //Описываем набор ресурсов и то, как к ним пожно получить доступ из шейдера
         let texture_bind_group_layout = device.create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -147,20 +170,20 @@ impl State {
         );
         camera.update(instant::Duration::default());
 
-        let (camera_bind_group_layout, camera_bind_group, camera_buffer) = 
+        let (camera_bind_group_layout, camera_bind_group, camera_buffer) =
             camera.get_camera_bind_groups(&device);
 
 
         //Создаём шейдерный модуль
-        let shader = device.create_shader_module(
+        /*let shader = device.create_shader_module(
             wgpu::include_wgsl!("shader.wgsl")
-        );
+        );*/
 
         //Текстура глубины
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         //Создаём графичсекий конвейер
-        let render_pipeline_layout = device.create_pipeline_layout(
+        /*let render_pipeline_layout = device.create_pipeline_layout(
             &wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 //Описание bind группы с текстурами,
@@ -171,7 +194,7 @@ impl State {
                 ],
                 push_constant_ranges: &[],
             }
-        );
+        );*/
 
         let common = render::Common::new(&device);
         let common_bind_group = common.bind_group(
@@ -179,7 +202,27 @@ impl State {
             &camera.TEST_get_view_proj_matrix_buffer(&device)
         );
 
-        let render_pipeline = render::PrimitivePipeline::new(&device, &common, &config).pipeline;
+        let render_pipeline = render::PrimitivePipeline::new(
+            &device,
+            &common,
+            &config
+        ).pipeline;
+
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
 
 
         /* let render_pipeline = device.create_render_pipeline(
@@ -258,7 +301,9 @@ impl State {
             camera_buffer,
             depth_texture,
             obj_model,
-            texture_bind_group_layout
+            vertex_buffer,
+            index_buffer,
+            texture_bind_group_layout,
         }
     }
 
@@ -335,13 +380,13 @@ impl State {
                         stencil_ops: None,
                     }),
                 }
-        );
+            );
 
             render_pass.set_pipeline(&self.render_pipeline);
             //группа с текстурами и семплером
             //render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
 
-            render_pass.set_bind_group(1, &self.common_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.common_bind_group, &[]);
 
             //параметры: номер слота, вершины
             //   render_pass.set_vertex_buffer(0, self.obj_model.vertex_buffer.slice(..));
@@ -351,42 +396,13 @@ impl State {
             //нарисовать три вершины в одном экземляре
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
-            const VERTICES: &[render::Vertex] = &[
-                render::Vertex { pos: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-                render::Vertex { pos: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-                render::Vertex { pos: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-                render::Vertex { pos: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-                render::Vertex { pos: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
-            ];
-
-            let vertex_buffer = device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(VERTICES),
-                    usage: wgpu::BufferUsages::VERTEX,
-                }
-            );
-            // NEW!
-            let index_buffer = device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Index Buffer"),
-                    contents: bytemuck::cast_slice(INDICES),
-                    usage: wgpu::BufferUsages::INDEX,
-                }
-            );
-
-            const INDICES: &[u16] = &[
-                0, 1, 4,
-                1, 2, 4,
-                2, 3, 4,
-            ];
 
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1); // 2.
 
 
-            render_pass.draw_model(&self.obj_model)
+            //render_pass.draw_model(&self.obj_model)
 
             
             //use model::DrawModel;
@@ -401,17 +417,8 @@ impl State {
 
 }
 
-#[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub async fn run() {
-
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
-        } else {
-            env_logger::init();
-        }
-    }
+    env_logger::init();
     
     let event_loop = EventLoop::new();
     let window = 
@@ -424,25 +431,9 @@ pub async fn run() {
             .with_position(PhysicalPosition { x: 0, y: 0 })
             .build(&event_loop)
             .unwrap();
-    window.set_cursor_grab(true).unwrap();
+    //window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
     window.set_cursor_visible(false);
     window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5));
-
-    #[cfg(target_arch = "wasm32")]
-    {
-        window.set_inner_size(PhysicalSize::new(WIDTH, HEIGHT));
-        //window.set_cursor_visible(false);
-        
-        use winit::platform::web::WindowExtWebSys;
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("ebenya")?;
-                let canvas = web_sys::Element::from(window.canvas());
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            }).expect("Couldn't append canvas to document body.");
-    }
 
     let mut state = State::new(&window).await;
     let mut last_render_time = instant::Instant::now();

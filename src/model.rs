@@ -146,7 +146,7 @@ impl Model {
 
                 
 
-                meshes.push(Mesh { indices, vertex_buffer, index_buffer, material: materials[material_index] });
+                //meshes.push(Mesh { indices, vertex_buffer, index_buffer, material: materials[material_index] });
             }
         }
 

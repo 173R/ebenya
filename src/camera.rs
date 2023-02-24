@@ -1,4 +1,5 @@
-use std::f32::consts::FRAC_PI_2; use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer}; use winit::{ event::*, };
+use std::f32::consts::FRAC_PI_2;
+use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer}; use winit::{ event::*, };
 use crate::vmath::{Vector3, Matrix4x4};
 
 #[derive(Debug, PartialEq)]
