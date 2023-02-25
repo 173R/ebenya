@@ -23,7 +23,7 @@ mod render;
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 1240.0;
 
-const INDICES: &[u16] = &[
+/*const INDICES: &[u16] = &[
     0, 1, 4,
     1, 2, 4,
     2, 3, 4,
@@ -35,6 +35,19 @@ const VERTICES: &[render::Vertex] = &[
     render::Vertex { pos: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
     render::Vertex { pos: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
     render::Vertex { pos: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+];
+*/
+
+const INDICES: &[u16] = &[
+    0, 2, 1,
+    1, 3, 0
+];
+
+const VERTICES: &[render::Vertex] = &[
+    render::Vertex { pos: [-0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    render::Vertex { pos: [0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { pos: [-0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { pos: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
 ];
 
 struct State {
@@ -297,7 +310,8 @@ impl State {
             render_pipeline,
             //diffuse_bind_group,
             camera,
-            common_bind_group,
+            common_bind_group: camera_bind_group,
+            //common_bind_group,
             camera_buffer,
             depth_texture,
             obj_model,
@@ -431,9 +445,9 @@ pub async fn run() {
             .with_position(PhysicalPosition { x: 0, y: 0 })
             .build(&event_loop)
             .unwrap();
-    //window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+    //window.set_cursor_grab(CursorGrabMode::Confined).unwrap();
     window.set_cursor_visible(false);
-    window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5));
+    window.set_cursor_position(PhysicalPosition::new(WIDTH * 0.5, HEIGHT * 0.5)).unwrap();
 
     let mut state = State::new(&window).await;
     let mut last_render_time = instant::Instant::now();
