@@ -7,7 +7,7 @@ use crate::texture;
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    pub pos: [f32; 3],
+    pub position: [f32; 3],
     pub color: [f32; 3]
 }
 

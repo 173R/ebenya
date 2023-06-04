@@ -40,14 +40,34 @@ const VERTICES: &[render::Vertex] = &[
 
 const INDICES: &[u16] = &[
     0, 2, 1,
-    1, 3, 0
+    1, 3, 0,
+
+    5, 6, 4,
+    4, 7, 5,
+
+    0, 4, 6,
+    6, 2, 0,
+
+    3, 1, 5,
+    5, 7, 3,
+
+    0, 3, 7,
+    7, 4, 0,
+
+    2, 6, 5,
+    5, 1, 2
 ];
 
 const VERTICES: &[render::Vertex] = &[
-    render::Vertex { pos: [-0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // A
-    render::Vertex { pos: [0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
-    render::Vertex { pos: [-0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
-    render::Vertex { pos: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { position: [-0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    render::Vertex { position: [0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { position: [-0.5, -0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { position: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // B
+
+    render::Vertex { position: [-0.5, 0.5, 1.0], color: [0.5, 0.0, 0.5] }, // A
+    render::Vertex { position: [0.5, -0.5, 1.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { position: [-0.5, -0.5, 1.0], color: [0.5, 0.0, 0.5] }, // B
+    render::Vertex { position: [0.5, 0.5, 1.0], color: [0.5, 0.0, 0.5] }, // B
 ];
 
 struct State {
@@ -210,10 +230,10 @@ impl State {
         );*/
 
         let common = render::Common::new(&device);
-        let common_bind_group = common.bind_group(
+        /*let common_bind_group = common.bind_group(
             &device,
             &camera.TEST_get_view_proj_matrix_buffer(&device)
-        );
+        );*/
 
         let render_pipeline = render::PrimitivePipeline::new(
             &device,
@@ -367,6 +387,13 @@ impl State {
             }
         );
 
+        let vertex_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
         //Создаём проход рендера
         
         {//так как созданный _render_pass владеет encoder 
@@ -411,8 +438,11 @@ impl State {
             //render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
 
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                self.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16
+            );
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1); // 2.
 
 
